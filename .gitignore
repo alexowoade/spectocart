@@ -8,3 +8,5 @@ webhook_events.json
 last_cart.json
 last_receipt.json
 .DS_Store
+vault_tokens.json
+vault_pending.json

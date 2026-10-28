@@ -11,7 +11,7 @@ This honesty matters, and it is stated up front: SpecToCart aggregates sourced i
 - **Gemini 3.6 Flash (primary, proven live 2026-10-28) — BOM, step plan, critic.** Gemini Vision reads the uploaded project photo and returns a structured Bill of Materials (3-5 items, quantity, max unit price, priority, search query, reason). A second Gemini call per item (critic) checks category/use plausibility. A third call generates the ordered step plan.
 - **Gemini 3.8 Flash (fallback).** Patch 8 v6 falls back in-family on transient errors only, then retries the chain. No other model is used.
 - **Channel3 Product Graph** — live product search and relevance scoring (not a generic web search).
-- **PayPal Sandbox** — order, approval, status, capture, refund, Vault (after Gate), webhooks (after Gate). No real money, sandbox test accounts only.
+- **PayPal Sandbox** — order, approval, status, capture, refund, Vault (live-tested second charge, web app), webhooks (pending public URL). No real money, sandbox test accounts only.
 - **Frameworks:** Python, Pydantic (structured Gemini output), Flask (web app), PayPal JavaScript SDK (web checkout button, server-side create/capture).
 
 ## How to score this in 3 minutes (judging criteria)
@@ -34,6 +34,7 @@ This honesty matters, and it is stated up front: SpecToCart aggregates sourced i
   - $49.87 — capture `0R298208FW259542P`, fee $2.23, net $47.64
   - $51.64 — capture `5X925796KR327684F`, fee $2.29, net $49.35 (Patch 8 v5, with critic verdicts in the receipt)
   - $49.79 — capture `4ET24157KE976933Y`, fee $2.23, net $47.56 (Patch 8 v6, --critic, project math ceil(16.67x1.10/15.00)=2 rolls, critic OK/OK/REJECT/OK, sealant REJECT correct: seam cover vs liquid sealant)
+  - **Vault second charge, live-tested 2026-10-28 in the web app: $35.61 — order `9DA556555C6203348`, capture `9U6516399J173801E`, fee $1.73, net $33.88, Method = vaulted in `/orders`, no browser approval for that second project.** Setup-token -> payment-token saved on `/vault` (Personal buyer John Doe, customer id present), then a fresh project charged from the vault with `payment_source.paypal.vault_id` + `stored_credential { MERCHANT, UNSCHEDULED, SUBSEQUENT }`. The order completed on creation; a second capture attempt correctly returned `ORDER_ALREADY_CAPTURED`.
 - **Do not re-capture any completed order.** A capture is final; create a fresh order for a new test or a refund demo.
 
 ## How it works

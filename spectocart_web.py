@@ -115,6 +115,8 @@ app = Flask(__name__)
 ORDERS_FILE = "orders.json"
 WEBHOOK_FILE = "webhook_events.json"
 CART_FILE = "last_cart.json"
+VAULT_FILE = "vault_tokens.json"
+VAULT_PENDING_FILE = "vault_pending.json"
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -172,7 +174,7 @@ nav a { margin-right: 1rem; }
 @app.route("/")
 def home():
     return f"""<!doctype html><html><head><title>SpecToCart</title>{PAGE_CSS}</head><body>
-<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a> <a href="/webhook-events">Webhook events</a></nav>
+<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a> <a href="/vault">Vault (returning DIYer)</a> <a href="/webhook-events">Webhook events</a></nav>
 <h1>SpecToCart - vision-first, project-specific procurement</h1>
 <p>Photograph a project, AI builds a priced shopping list for <b>that one job</b>,
 you check out once with PayPal. This is not recurring household restocking.</p>
@@ -298,14 +300,24 @@ def cart():
         )
         fallback_html = (f"<p class='warn'><b>Budget fallback applied</b> ({cart.get('fallback_policy', '')}): "
                          f"the following Optional items were dropped to get under budget:</p><ul>{drops}</ul>")
+    vault = _load_json(VAULT_FILE, None)
+    if vault and vault.get("payment_token_id"):
+        vault_html = """<h2>Pay with vaulted PayPal (returning DIYer, no re-approval)</h2>
+<p>This uses the payment method you saved on <a href='/vault'>/vault</a>, under the future-payment consent you approved there. No browser approval is needed for this second project.</p>
+<form action="/api/vault/charge" method="post"><button type="submit">Charge vaulted PayPal for this cart</button></form>
+<p><small>Vaulted method: Yes (token id is stored server-side in vault_tokens.json only, never shown here and never committed).</small></p>"""
+    else:
+        vault_html = """<h2>Returning DIYer?</h2>
+<p>No vaulted payment method saved yet. <a href='/vault'>Save your PayPal on /vault</a> first, then come back here for a second project charged without re-approval.</p>"""
     return f"""<!doctype html><html><head><title>SpecToCart cart</title>{PAGE_CSS}</head><body>
-<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a></nav>
+<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a> <a href="/vault">Vault</a></nav>
 <h1>{cart['project_title']}</h1>
 <p>Budget: ${cart['budget']:.2f} &nbsp; Sourced total: <b>${cart['grand_total']:.2f}</b></p>
 {fallback_html}
 <table><tr><th>BOM item</th><th>Sourced product</th><th>Unit</th><th>Line total</th><th>Relevance</th></tr>{rows}</table>
 <h2>Pay with PayPal (Sandbox)</h2>
 <p>Click the PayPal button. Your server creates the order, PayPal approves it, your server captures it.</p>
+{vault_html}
 <div id="paypal-button-container"></div>
 <p id="result"></p>
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
@@ -349,15 +361,15 @@ def orders_page():
                 f"<button type='submit'>Refund (sandbox demo)</button></form>"
             )
         rows += (
-            f"<tr><td>{order.get('order_id')}</td><td>{order.get('project_title', '')}</td>"
+            f"<tr><td>{order.get('order_id')}</td><td>{order.get('project_title', '')}</td><td>{'vaulted' if order.get('vaulted_method') else 'fresh approval'}</td>"
             f"<td>${order.get('total_usd', '')}</td><td>{order.get('status')}</td>"
             f"<td>{order.get('capture_id', '')}</td><td>${order.get('fee', '')}</td>"
             f"<td>${order.get('net', '')}</td><td>{refund_btn}</td></tr>"
         )
     return f"""<!doctype html><html><head><title>SpecToCart orders</title>{PAGE_CSS}</head><body>
-<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a> <a href="/webhook-events">Webhook events</a></nav>
+<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a> <a href="/vault">Vault (returning DIYer)</a> <a href="/webhook-events">Webhook events</a></nav>
 <h1>Orders dashboard</h1>
-<table><tr><th>Order</th><th>Project</th><th>Total</th><th>Status</th><th>Capture</th><th>Fee</th><th>Net</th><th>Refund</th></tr>{rows or '<tr><td colspan="8">No orders yet.</td></tr>'}</table>
+<table><tr><th>Order</th><th>Project</th><th>Method</th><th>Total</th><th>Status</th><th>Capture</th><th>Fee</th><th>Net</th><th>Refund</th></tr>{rows or '<tr><td colspan="8">No orders yet.</td></tr>'}</table>
 <p>Refund is a sandbox demo only. Do not refund a capture you want to keep as proof - create a fresh order for a refund demo.</p>
 </body></html>"""
 
@@ -433,6 +445,247 @@ def api_refund():
 def api_order_status(order_id):
     result = get_paypal_order_status(order_id)
     return jsonify({"order_id": order_id, "status": result.get("status")})
+
+
+
+# ---------------------------------------------------------------------
+# Vault - returning DIYer, Step 2 after the Gate.
+# Flow, proven in the throwaway test 2026-10-28 (setup 201, payment
+# token 201, no charge), now integrated here:
+#   /vault -> POST /api/vault/setup -> PayPal approve link
+#   -> GET /vault/return?token_id=... -> POST /v3/vault/payment-tokens
+#   -> vault_tokens.json (server-side only, NEVER committed, NEVER
+#      printed in full in a page or in chat)
+#   -> second project: POST /api/vault/charge -> order with
+#      payment_source.paypal.attributes.vault_id -> capture at once,
+#      no browser approval, order record has vaulted_method=True.
+# Consent: the /vault page states, before setup, that saving means
+# SpecToCart may charge the saved PayPal for a later project without
+# re-approval, for that project only. If that consent is not shown
+# and approved, do not claim "without re-approval" in README/video.
+# If the vaulted charge fails, the normal PayPal button on /cart
+# is still there - Vault is an extra path, not a replacement.
+# ---------------------------------------------------------------------
+import uuid as _vault_uuid
+
+VAULT_MERCHANT_CUSTOMER_ID = "spectocart_demo_user"
+
+
+def _vault_setup_token():
+    token = get_paypal_access_token()
+    res = requests.post(
+        "https://api-m.sandbox.paypal.com/v3/vault/setup-tokens",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}",
+                 "PayPal-Request-Id": str(_vault_uuid.uuid4())},
+        json={"customer": {"merchant_customer_id": VAULT_MERCHANT_CUSTOMER_ID},
+              "payment_source": {"paypal": {
+                  "usage_type": "MERCHANT",
+                  "experience_context": {
+                      "return_url": "http://127.0.0.1:5000/vault/return",
+                      "cancel_url": "http://127.0.0.1:5000/vault/cancel",
+                  }}}},
+        timeout=15,
+    )
+    res.raise_for_status()
+    return res.json()
+
+
+def _vault_payment_token(setup_id):
+    token = get_paypal_access_token()
+    res = requests.post(
+        "https://api-m.sandbox.paypal.com/v3/vault/payment-tokens",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}",
+                 "PayPal-Request-Id": str(_vault_uuid.uuid4())},
+        json={"payment_source": {"token": {"id": setup_id, "type": "SETUP_TOKEN"}}},
+        timeout=15,
+    )
+    res.raise_for_status()
+    return res.json()
+
+
+def _vault_create_and_capture(cart, payment_token_id):
+    token = get_paypal_access_token()
+    total = f"{float(cart['grand_total']):.2f}"
+    purchase_unit = {"description": f"SpecToCart BOM (vaulted): {cart['project_title']}"[:120],
+                     "amount": {"currency_code": "USD", "value": total,
+                                "breakdown": {"item_total": {"currency_code": "USD", "value": total}}}}
+    merchant_id = (os.getenv("PAYPAL_MERCHANT_ID") or "").strip()
+    if merchant_id:
+        purchase_unit["payee"] = {"merchant_id": merchant_id}
+    # Items, like the normal order, so amount = sum(items) is checkable.
+    paypal_items = []
+    total_cents = 0
+    for item in cart["items"]:
+        unit_cents = int(round(float(item["unit_price"]) * 100))
+        qty = int(item["quantity"])
+        total_cents += unit_cents * qty
+        paypal_items.append({"name": item["sourced_title"][:120], "quantity": str(qty),
+                             "description": f"Vendor: {item['merchant']} | {item['priority']}"[:120],
+                             "unit_amount": {"currency_code": "USD", "value": f"{unit_cents / 100:.2f}"}})
+    purchase_unit["items"] = paypal_items
+    order_payload = {
+        "intent": "CAPTURE",
+        "purchase_units": [purchase_unit],
+        "payment_source": {"paypal": {
+            # vault_id MUST be direct under paypal when stored_credential
+            # is present. v2 put it under attributes.vault_id and PayPal
+            # rejected creation with 422
+            # PAYPAL_STORED_CREDENTIAL_MISSING_REQUIRED_PARAMETER,
+            # field payment_source/paypal/vault_id, debug f24275192f962.
+            "vault_id": payment_token_id,
+            "attributes": {
+                "customer": {"merchant_customer_id": VAULT_MERCHANT_CUSTOMER_ID}},
+            # Merchant-initiated, subsequent, unscheduled (a second
+            # project, not a recurring schedule). Without this,
+            # PayPal returns PAYER_ACTION_REQUIRED and capture 422s,
+            # as seen with order 0EP36392FF822790Y.
+            "stored_credential": {
+                "payment_initiator": "MERCHANT",
+                "payment_type": "UNSCHEDULED",
+                "usage": "SUBSEQUENT"}}},
+    }
+    res = requests.post(
+        "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}",
+                 "PayPal-Request-Id": str(_vault_uuid.uuid4())},
+        json=order_payload, timeout=15,
+    )
+    if res.status_code >= 400:
+        return {"order": {}, "captured": None, "error": f"Vaulted order failed {res.status_code}: {res.text[:1000]}"}
+    order = res.json()
+    order_id = order.get("id", "")
+    order_status = order.get("status", "")
+    if order_status == "PAYER_ACTION_REQUIRED":
+        # PayPal did NOT treat the vault_id as buyer-not-present
+        # approval. Capturing now would 422. Return the order so
+        # the page can show this honestly, instead of a 500.
+        approve_link = ""
+        for link in order.get("links", []):
+            if link.get("rel") in ("approve", "payer-action"):
+                approve_link = link.get("href")
+                break
+        return {"order": order, "captured": None,
+                "error": f"Vaulted order {order_id} is PAYER_ACTION_REQUIRED, not approved. "
+                         f"PayPal did not accept this as a merchant-initiated charge. "
+                         f"Approve link (if you want to test the token with approval): {approve_link}"}
+    if order_status == "COMPLETED":
+        # Vaulted intent=CAPTURE orders can complete on creation.
+        # Capturing again gives ORDER_ALREADY_CAPTURED (seen with
+        # order 9DAS56555C6203348, debug f771534d1574e). Use the
+        # capture already in the order response, do NOT call capture.
+        return {"order": order, "captured": order}
+    try:
+        captured = capture_paypal_order(order_id)
+    except Exception as exc:
+        # ORDER_ALREADY_CAPTURED here means the same thing: the
+        # order completed on creation, so treat the order itself
+        # as the captured result instead of failing.
+        if "ORDER_ALREADY_CAPTURED" in str(exc):
+            return {"order": order, "captured": order}
+        return {"order": order, "captured": None, "error": f"Vaulted capture failed: {exc}"}
+    return {"order": order, "captured": captured}
+
+
+@app.route("/vault")
+def vault_page():
+    vault = _load_json(VAULT_FILE, None)
+    saved = "Yes - a payment token is stored server-side (id not shown here)." if vault and vault.get("payment_token_id") else "No - no vaulted method saved yet."
+    return f"""<!doctype html><html><head><title>SpecToCart Vault</title>{PAGE_CSS}</head><body>
+<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a></nav>
+<h1>Vault - returning DIYer</h1>
+<p><b>Story:</b> First project, you approve manually with the PayPal button. Second project, SpecToCart charges the method you saved here, without you re-approving in a browser.</p>
+<p><b>Consent, read before you save:</b> By saving your PayPal here and approving on PayPal, you consent to SpecToCart charging that saved PayPal for a later project you start here, without a fresh browser approval for that project. This is a sandbox demo only, and you can delete the saved method on PayPal at any time.</p>
+<p>Vaulted method saved: <b>{saved}</b></p>
+<form action="/api/vault/setup" method="post"><button type="submit">Save my PayPal for my next project</button></form>
+<p><small>Setup token -> payment token, no money charged by saving alone. The token id is stored in vault_tokens.json on the server only, never committed to git, never printed in full here.</small></p>
+</body></html>"""
+
+
+@app.route("/api/vault/setup", methods=["POST"])
+def api_vault_setup():
+    try:
+        data = _vault_setup_token()
+    except Exception as exc:
+        return f"Vault setup failed: {exc} <a href='/vault'>Back</a>", 400
+    setup_id = data.get("id", "")
+    approve_link = ""
+    for link in data.get("links", []):
+        if link.get("rel") in ("approve", "payer-action"):
+            approve_link = link.get("href")
+            break
+    if not setup_id or not approve_link:
+        return f"Vault setup returned no approve link: {data} <a href='/vault'>Back</a>", 400
+    _save_json(VAULT_PENDING_FILE, {"setup_id": setup_id, "status": data.get("status", "")})
+    return redirect(approve_link)
+
+
+@app.route("/vault/return")
+def vault_return():
+    setup_id = request.args.get("approval_token_id") or request.args.get("token_id") or ""
+    if not setup_id:
+        pending = _load_json(VAULT_PENDING_FILE, {})
+        setup_id = pending.get("setup_id", "")
+    if not setup_id:
+        return "No setup token found. Start again on <a href='/vault'>/vault</a>.", 400
+    try:
+        data = _vault_payment_token(setup_id)
+    except Exception as exc:
+        return f"Payment token conversion failed: {exc} <a href='/vault'>Back</a>", 400
+    payment_token_id = data.get("id", "")
+    if not payment_token_id:
+        return f"Payment token conversion returned no id: {data} <a href='/vault'>Back</a>", 400
+    _save_json(VAULT_FILE, {"payment_token_id": payment_token_id,
+                            "customer_id_present": bool(data.get("customer")),
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "vaulted_method": True})
+    return f"""<!doctype html><html><head><title>Vault saved</title>{PAGE_CSS}</head><body>
+<h1>Vaulted method saved</h1>
+<p>Payment token returned: <b>Yes</b> (id stored server-side only, not shown here). Customer id present: <b>{'Yes' if data.get('customer') else 'No'}</b></p>
+<p>Next: run a second project on <a href='/'>/</a>, then on /cart use "Charge vaulted PayPal for this cart". No browser approval should be needed for that charge.</p>
+<p><a href='/orders'>Orders dashboard</a></p>
+</body></html>"""
+
+
+@app.route("/vault/cancel")
+def vault_cancel():
+    return "Vault setup cancelled. No payment method was saved. <a href='/vault'>Back to /vault</a>"
+
+
+@app.route("/api/vault/charge", methods=["POST"])
+def api_vault_charge():
+    cart = _load_json(CART_FILE, None)
+    vault = _load_json(VAULT_FILE, None)
+    if not cart:
+        return "No cart. Run /analyze first.", 400
+    if not vault or not vault.get("payment_token_id"):
+        return "No vaulted method saved. Save one on <a href='/vault'>/vault</a> first.", 400
+    result = _vault_create_and_capture(cart, vault["payment_token_id"])
+    if "error" in result and not result.get("captured"):
+        # Save the attempt so /orders shows it, then show the error.
+        _save_order({"order_id": (result.get("order") or {}).get("id", ""), "project_title": cart["project_title"],
+                     "total_usd": cart["grand_total"], "status": (result.get("order") or {}).get("status", ""),
+                     "capture_id": "", "fee": "", "net": "", "vaulted_method": True})
+        return f"Vaulted charge failed: {result['error']} <br>Try the normal PayPal button on <a href='/cart'>/cart</a> instead.", 400
+    captured = result["captured"]
+    order_id = result["order"].get("id", "")
+    capture = {}
+    try:
+        capture = captured["purchase_units"][0]["payments"]["captures"][0]
+        breakdown = capture.get("seller_receivable_breakdown", {})
+        fee = breakdown.get("paypal_fee", {}).get("value", "")
+        net = breakdown.get("net_amount", {}).get("value", "")
+    except (KeyError, IndexError, TypeError):
+        fee = net = ""
+    _save_order({"order_id": order_id, "project_title": cart["project_title"],
+                 "total_usd": cart["grand_total"], "status": captured.get("status", "COMPLETED"),
+                 "capture_id": capture.get("id", ""), "fee": fee, "net": net,
+                 "vaulted_method": True,
+                 "request_id": result["order"].get("id", "")})
+    return f"""<!doctype html><html><head><title>Vaulted charge</title>{PAGE_CSS}</head><body>
+<h1>Vaulted charge: {captured.get('status', '')}</h1>
+<p>Order: {order_id} &nbsp; Capture: {capture.get('id', '')} &nbsp; Total: ${cart['grand_total']:.2f} &nbsp; Fee: ${fee} &nbsp; Net: ${net}</p>
+<p>Method: <b>vaulted, not fresh approval</b> - this order appears in <a href='/orders'>/orders</a> with Method = vaulted.</p>
+</body></html>"""
 
 
 # ---------------------------------------------------------------------
