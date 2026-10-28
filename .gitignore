@@ -1,0 +1,10 @@
+.env
+venv/
+__pycache__/
+*.pyc
+uploads/
+orders.json
+webhook_events.json
+last_cart.json
+last_receipt.json
+.DS_Store
