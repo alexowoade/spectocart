@@ -1487,6 +1487,28 @@ def main() -> int:
         print(result)
         return 0
 
+    if argv and argv[0] == "demo-paint-math":
+        # Video breadth cut, 2026-10-30: paint math only, no Channel3,
+        # no Gemini, no PayPal, no receipt written. This exists so the
+        # video can show a second derivation line next to the wrap
+        # receipt, without pretending a live paint cart exists.
+        # Live paint sourcing is blocked on Channel3 painter's-tape
+        # inventory (see README domain coverage); the math itself
+        # is unit-tested and this mode just prints it.
+        demo_parser = argparse.ArgumentParser(description="Demo paint math only")
+        demo_parser.add_argument("--perimeter", type=float, required=True, help="Room perimeter in feet")
+        demo_parser.add_argument("--height", type=float, required=True, help="Wall height in feet")
+        demo_parser.add_argument("--coats", type=int, default=2, help="Number of coats")
+        demo_parser.add_argument("--openings", type=float, default=0.0, help="Door/window area to subtract, sqft")
+        demo_parser.add_argument("--coverage", type=float, default=350.0, help="Coverage in sqft per gallon")
+        dargs = demo_parser.parse_args(argv[1:])
+        pm = compute_paint_math(
+            dargs.perimeter, dargs.height, dargs.coats, dargs.coverage, dargs.openings)
+        print(f"Paint math: {pm.derivation}")
+        print(f"  wall area: {pm.area_sqft} sqft, unit: {pm.unit_kind}, gallons: {pm.rolls_needed}")
+        print("  Note: math only - no Channel3, no PayPal, no receipt written.")
+        return 0
+
     if argv and argv[0] == "demo-fallback":
         if len(argv) != 3:
             raise SystemExit("Usage: demo-fallback <cart.json> <budget>")

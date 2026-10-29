@@ -27,6 +27,7 @@ from core_pipeline import (
     apply_budget_fallback,
     compute_project_math,
     compute_paint_math,
+    main,
     select_best_offer,
 )
 
@@ -528,6 +529,29 @@ def test_relevance_wall_safe_tape_not_match():
         raise AssertionError("should have raised NoValidOfferError")
     except Exception as exc:
         assert type(exc).__name__ == "NoValidOfferError"
+
+
+def test_demo_paint_math_mode():
+    # 2026-10-30 video cut: demo-paint-math prints the derivation,
+    # writes no receipt, and needs no API keys. Patch sys.argv
+    # because main() reads sys.argv[1:] directly.
+    import io
+    import sys
+    from contextlib import redirect_stdout
+    old_argv = sys.argv
+    sys.argv = ["core_pipeline.py", "demo-paint-math",
+                "--perimeter", "48", "--height", "9",
+                "--coats", "2", "--openings", "40"]
+    try:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            rc = main()
+        out = buf.getvalue()
+    finally:
+        sys.argv = old_argv
+    assert rc == 0
+    assert "= 3 gallon" in out
+    assert "no receipt written" in out
 
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
