@@ -433,8 +433,21 @@ def _stem(word: str) -> str:
 
 
 def _tokenize(text: str) -> set[str]:
-    words = re.findall(r"[a-z0-9]+", text.lower())
-    return {_stem(w) for w in words if w not in _STOPWORDS}
+    # FIXED 2026-10-29 (paint diagnostic): two real bugs, not paint-only.
+    # 1) Possessives tokenized as a separate word: "Painter's" gave
+    #    {"painter", "s"}, so any possessive brand ("Elmer's") scored
+    #    a spurious "s" match against any possessive query. Strip
+    #    's / 's (straight and curly) BEFORE the regex, at the source.
+    # 2) Container/unit words counted as relevance matches, even
+    #    though _HEAD_NOUN_EXCEPTIONS already excludes them from
+    #    head-noun selection. A word cannot be "not meaningful enough
+    #    to be a head noun" and "meaningful enough to earn a match
+    #    point" at the same time. _tokenize now consults the same set,
+    #    so roll/kit/pack/inch never earn a match point either.
+    text = re.sub(r"['\u2019]s\b", "", text.lower())
+    words = re.findall(r"[a-z0-9]+", text)
+    return {_stem(w) for w in words
+            if w not in _STOPWORDS and _stem(w) not in _HEAD_NOUN_EXCEPTIONS}
 
 
 def _meaningful_tokens(text: str) -> list[str]:
@@ -703,6 +716,7 @@ class ProjectMath:
     rolls_needed: int | None
     derivation: str
     assumptions: list[str]
+    unit_kind: str = "roll"  # NEW paint: default preserves wrap behaviour
 
 
 DEFAULT_COVERAGE_SQFT = 15.0
@@ -744,6 +758,46 @@ def compute_project_math(
             f"{coverage_sqft_per_roll:.2f} sqft per roll) = {rolls} roll(s)"
         ),
         assumptions=assumptions,
+    )
+
+
+def compute_paint_math(
+    perimeter_ft: float,
+    height_ft: float,
+    coats: int = 2,
+    coverage_sqft_per_gallon: float = 350.0,
+    openings_sqft: float = 0.0,
+) -> ProjectMath:
+    """Paint derivation (new, additive - nothing existing calls this yet).
+
+    gallons = ceil((perimeter * height - openings) * coats / coverage)
+    rolls_needed is reused as the unit count; unit_kind="gallon"
+    tells a reader which unit that count is in.
+    """
+    if not all(math.isfinite(v) and v > 0 for v in (perimeter_ft, height_ft)):
+        raise ValueError("perimeter_ft and height_ft must be finite and positive.")
+    if not isinstance(coats, int) or coats < 1:
+        raise ValueError("coats must be a positive integer.")
+    if not math.isfinite(coverage_sqft_per_gallon) or coverage_sqft_per_gallon <= 0:
+        raise ValueError("coverage_sqft_per_gallon must be finite and positive.")
+    if not math.isfinite(openings_sqft) or openings_sqft < 0:
+        raise ValueError("openings_sqft must be finite and non-negative.")
+    wall_area = perimeter_ft * height_ft - openings_sqft
+    if wall_area <= 0:
+        raise ValueError("openings_sqft is larger than the wall area.")
+    gallons = math.ceil(wall_area * coats / coverage_sqft_per_gallon)
+    return ProjectMath(
+        length_in=perimeter_ft * 12, width_in=height_ft * 12,
+        area_sqft=round(wall_area, 2), waste_pct=0.0,
+        coverage_sqft_per_roll=coverage_sqft_per_gallon,
+        rolls_needed=gallons,
+        unit_kind="gallon",
+        derivation=(
+            f"ceil(({perimeter_ft:.1f}ft perimeter x {height_ft:.1f}ft height "
+            f"- {openings_sqft:.1f}sqft openings) x {coats} coats / "
+            f"{coverage_sqft_per_gallon:.0f}sqft per gallon) = {gallons} gallon(s)"
+        ),
+        assumptions=[],
     )
 
 
@@ -1259,6 +1313,40 @@ def _run_pipeline(args) -> int:
         project_math = asdict(pm)
         print(f"\n  Project math: {pm.derivation} (dimensions not supplied; using BOM quantity)")
 
+    # Paint project math (NEW, additive). Wrap block above is kept
+    # exactly as it is; for a paint run it will have recorded a
+    # wrap-style dimensions_missing ProjectMath (or a wrap roll
+    # count if --length/--width were also passed). This block
+    # overwrites project_math with the paint derivation and
+    # updates the math item quantity to gallons, so the receipt
+    # carries unit_kind="gallon" and the paint derivation.
+    if args.domain == "paint":
+        paint_math_item = next(
+            (r for r in sourced_cart if r["bom_item"] == args.math_item), None
+        ) if args.math_item else _pick_math_item(sourced_cart)
+        if args.perimeter is not None and args.height is not None:
+            if paint_math_item:
+                pm_paint = compute_paint_math(
+                    args.perimeter, args.height, args.coats,
+                    args.coverage if args.coverage else 350.0, args.openings)
+                project_math = asdict(pm_paint)
+                if pm_paint.rolls_needed:
+                    print(f"  Math target: {paint_math_item['bom_item']}")
+                    old_qty = paint_math_item["quantity"]
+                    paint_math_item["quantity"] = pm_paint.rolls_needed
+                    paint_math_item["line_total"] = round(paint_math_item["unit_price"] * pm_paint.rolls_needed, 2)
+                    print(f"\n  Project math (paint): {pm_paint.derivation}")
+                    print(f"  Quantity for '{paint_math_item['bom_item']}' updated {old_qty} -> {pm_paint.rolls_needed}.")
+            else:
+                print("\n  Project math skipped: no suitable Essential item found.")
+        else:
+            project_math = asdict(ProjectMath(
+                length_in=None, width_in=None, area_sqft=None, waste_pct=0.0,
+                coverage_sqft_per_roll=350.0, rolls_needed=None,
+                derivation="dimensions not supplied; using BOM quantity",
+                assumptions=["dimensions_missing"], unit_kind="gallon"))
+            print(f"\n  Project math (paint): {project_math['derivation']} (dimensions not supplied; using BOM quantity)")
+
     # Critic pass
     critic_verdicts: list[dict] = []
     if args.critic:
@@ -1437,6 +1525,11 @@ def main() -> int:
     parser.add_argument("--length", type=float, default=None, help="Countertop length in inches (enables project math)")
     parser.add_argument("--width", type=float, default=None, help="Countertop width in inches (enables project math)")
     parser.add_argument("--coverage", type=float, default=None, help="Coverage in sq ft per roll (default: 15, labeled assumption)")
+    parser.add_argument("--domain", choices=["wrap", "paint"], default="wrap")
+    parser.add_argument("--perimeter", type=float, default=None, help="Room perimeter in feet (paint)")
+    parser.add_argument("--height", type=float, default=None, help="Wall height in feet (paint)")
+    parser.add_argument("--coats", type=int, default=2, help="Number of coats (paint)")
+    parser.add_argument("--openings", type=float, default=0.0, help="Door/window area to subtract, sqft (paint)")
     parser.add_argument("--math-item", default=None, help="BOM item to receive the derived quantity (default: first Essential with qty>1)")
     parser.add_argument("--critic", action="store_true", help="Enable the second-pass LLM critic")
     parser.add_argument("--strict-critic", action="store_true", help="Abort/drop on implausible verdicts")

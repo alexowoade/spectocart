@@ -26,6 +26,7 @@ from core_pipeline import (
     _tokenize,
     apply_budget_fallback,
     compute_project_math,
+    compute_paint_math,
     select_best_offer,
 )
 
@@ -45,15 +46,18 @@ def test_price_from_value():
 
 # ---- relevance rules ----
 def test_tokenize_stemming():
-    assert "inch" in _tokenize("inches")   # ches -> ch
-    assert "box" in _tokenize("boxes")     # xes -> x
+    # Stemming itself is unchanged (ches -> ch, ies -> y, etc.),
+    # but _tokenize now also excludes container/unit words, so
+    # inch/box/tube are NOT in the token set any more - see
+    # test_tokenize_container_words_excluded below. That is the
+    # 2026-10-29 fix: a word that cannot be a head noun cannot
+    # earn a relevance match point either.
     assert "battery" in _tokenize("batteries")
     assert "glass" in _tokenize("glass")   # exception preserved
     assert "liner" in _tokenize("liners")
     # FIXED 2026-10-27: the old generic "es" strip broke these:
     # tubes -> tub, cables -> cabl, cakes -> cak. Now only the
     # final "s" is stripped for e-ending words.
-    assert "tube" in _tokenize("tubes")
     assert "cable" in _tokenize("cables")
     assert "cake" in _tokenize("cakes")
     assert "class" in _tokenize("classes")
@@ -100,8 +104,10 @@ def test_synonym_contact_paper_is_shelf_liner():
     # paper", retail says "shelf liner". Without synonyms the
     # $16.78 Con-Tact product failed head_noun_missing, even
     # though it matched marble, vinyl and roll. With synonyms
-    # contact and paper both match via liner, so it scores 5
-    # and wins, and the wall sticker still does not rescue itself.
+    # contact and paper both match via liner, so it scores 4
+    # after the 2026-10-29 fix (roll no longer counts as a match,
+    # see test_tokenize_container_words_excluded) and wins, and
+    # the wall sticker still does not rescue itself.
     offers = [
         {"title": "Con-Tact Brand Self-Adhesive Shelf Liner - Beige Marble Vinyl Roll", "price": 16.78, "merchant": "lowes.com"},
         {"title": "Adhesive Shelf Liner - Marble", "price": 7.99, "merchant": "target.com"},
@@ -111,7 +117,7 @@ def test_synonym_contact_paper_is_shelf_liner():
         relevance_text="Waterproof Marble Vinyl Contact Paper Roll",
     )
     assert result.winner["unit_price"] == 16.78
-    assert result.winner["relevance_score"] == 5
+    assert result.winner["relevance_score"] == 4  # was 5 before roll was excluded
 
 
 def test_synonym_sealant_is_caulk_and_degreasing_is_degrease():
@@ -429,9 +435,104 @@ def test_fallback_still_over_budget():
     assert total == round(sum(r["line_total"] for r in new_cart), 2)
 
 
+def test_paint_math_gallons():
+    pm = compute_paint_math(perimeter_ft=48, height_ft=9, coats=2, coverage_sqft_per_gallon=350, openings_sqft=40)
+    # wall_area = 48*9 - 40 = 392 sqft; * 2 coats = 784; / 350 = 2.24 -> ceil -> 3
+    assert pm.rolls_needed == 3
+    assert pm.unit_kind == "gallon"
+    assert "= 3 gallon" in pm.derivation
+
+
+def test_paint_math_zero_openings():
+    pm = compute_paint_math(10, 8, coats=1, coverage_sqft_per_gallon=350, openings_sqft=0)
+    # 10*8 = 80 sqft; * 1 = 80; / 350 = 0.23 -> ceil -> 1
+    assert pm.rolls_needed == 1
+    assert pm.unit_kind == "gallon"
+
+
+def test_paint_math_rejects_bad_inputs():
+    for args in [(0, 9), (48, 0), (-1, 9)]:
+        try:
+            compute_paint_math(*args)
+        except ValueError:
+            continue
+        raise AssertionError(f"did not raise for {args}")
+
+
+def test_tokenize_possessive_stripped():
+    # 2026-10-29 fix at the regex layer, not the symptom layer:
+    # 's / 's are stripped before tokenizing, so no spurious "s" token.
+    assert _tokenize("Painter's Tape") == {"painter", "tape"}
+    assert _tokenize("Elmer's Tape") == {"elmer", "tape"}
+    assert "s" not in _tokenize("Levi\u2019s Jeans")
+    assert _tokenize("Baker's Tape") == {"baker", "tape"}
+
+
+def test_tokenize_container_words_excluded():
+    # _tokenize now consults _HEAD_NOUN_EXCEPTIONS, the same set
+    # _meaningful_tokens already used for head nouns. Container /
+    # unit words never identify a product, so they never earn a point.
+    assert "roll" not in _tokenize("Tape Roll")
+    assert "kit" not in _tokenize("Tool Kit")
+    assert "pack" not in _tokenize("Pack of 2")
+    assert "inch" not in _tokenize("inches")
+    assert "box" not in _tokenize("boxes")
+    assert "tube" not in _tokenize("tubes")
+    # Non-container words are unaffected.
+    assert _tokenize("Tape Roll") == {"tape"}
+
+
+def test_relevance_possessive_brand_not_match():
+    # Elmer's Tape Runner used to score 2 (s + tape) against
+    # "Painter's Tape Roll". After the possessive fix it scores 1
+    # (tape only) and is rejected - it is not painter's tape.
+    offers = [
+        {"title": "Elmer\u2019s CraftBond Permanent Tape Runner", "price": 5.79, "merchant": "michaels.com"},
+    ]
+    result = None
+    try:
+        result = select_best_offer(
+            offers, "painters tape", 12.00, relevance_text="Painter's Tape Roll")
+    except Exception as exc:
+        assert type(exc).__name__ == "NoValidOfferError"
+    assert result is None
+
+
+def test_relevance_container_word_not_match():
+    # Washi Tape Roll used to score 2 (tape + roll) against
+    # "Painter's Tape Roll". After the container fix it scores 1
+    # (tape only) and is rejected - washi tape is not painter's tape.
+    offers = [
+        {"title": "Metallic Washi Tape 1 Roll Mirror Masking Foil Sticker", "price": 9.99, "merchant": "lowes.com"},
+    ]
+    try:
+        select_best_offer(
+            offers, "masking tape", 12.00, relevance_text="Painter's Tape Roll")
+        raise AssertionError("should have raised NoValidOfferError")
+    except Exception as exc:
+        assert type(exc).__name__ == "NoValidOfferError"
+
+
+def test_relevance_wall_safe_tape_not_match():
+    # Scotch Wall-Safe Tape used to score 2 (tape + roll) at
+    # limit 25. After the container fix it scores 1 (tape only)
+    # and is rejected. If a paint receipt ever shows Wall-Safe
+    # Tape, it must be with a critic REJECT annotation, never
+    # as a highest_relevance win for painter's tape.
+    offers = [
+        {"title": "Scotch Wall-Safe Tape - Pkg of 2, 3/4\" x 600\" Rolls with Dispensers", "price": 7.11, "merchant": "dickblick.com"},
+    ]
+    try:
+        select_best_offer(
+            offers, "blue painters tape 1.88 inch", 12.00, relevance_text="Painter's Tape Roll")
+        raise AssertionError("should have raised NoValidOfferError")
+    except Exception as exc:
+        assert type(exc).__name__ == "NoValidOfferError"
+
 if __name__ == "__main__":
     tests = [v for k, v in list(globals().items()) if k.startswith("test_")]
     for t in tests:
         t()
         print(f"PASS {t.__name__}")
     print(f"{len(tests)} tests passed")
+

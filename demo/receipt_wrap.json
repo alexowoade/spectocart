@@ -1,0 +1,1672 @@
+{
+  "generated_at": "2026-10-29T22:42:02.681992+00:00",
+  "demo_mode": false,
+  "photo_path": "sample_countertop.jpg",
+  "photo_sha256": "3530e8c47d8e531295e8cdbddbdee571042713662184ce7136df154731cf3b67",
+  "project_title": "Kitchen Countertop Vinyl Wrap Refinishing",
+  "budget": 150.0,
+  "bom": [
+    {
+      "item_name": "Waterproof Marble Contact Paper Roll",
+      "search_query": "waterproof marble peel and stick countertop contact paper roll",
+      "quantity": 2,
+      "max_unit_price": 25.0,
+      "priority": "Essential",
+      "ai_reasoning": "Sufficient vinyl coverage is needed to fully cover the main countertop top and backsplash surfaces."
+    },
+    {
+      "item_name": "Vinyl Application Tool Kit",
+      "search_query": "vinyl wrap tool kit squeegee felt edge utility knife",
+      "quantity": 1,
+      "max_unit_price": 12.0,
+      "priority": "Essential",
+      "ai_reasoning": "A felt-edge squeegee prevents scratching during air bubble removal, and a precision knife ensures clean edge trims."
+    },
+    {
+      "item_name": "Clear Waterproof Kitchen Silicone Sealant",
+      "search_query": "clear silicone kitchen countertop caulk sealant waterproof",
+      "quantity": 1,
+      "max_unit_price": 10.0,
+      "priority": "Essential",
+      "ai_reasoning": "Seals the perimeter seam around edges and sink joins to prevent water from lifting the vinyl backing."
+    },
+    {
+      "item_name": "Heavy Duty Surface Degreaser Cleaner",
+      "search_query": "heavy duty surface degreaser spray kitchen prep",
+      "quantity": 1,
+      "max_unit_price": 8.0,
+      "priority": "Optional",
+      "ai_reasoning": "Ensures complete grease and residue removal before adhesive contact paper application for maximum longevity."
+    }
+  ],
+  "project_math": {
+    "length_in": 96.0,
+    "width_in": 25.0,
+    "area_sqft": 16.67,
+    "waste_pct": 10.0,
+    "coverage_sqft_per_roll": 15.0,
+    "rolls_needed": 2,
+    "derivation": "ceil(16.67 sqft * 1.10 waste / 15.00 sqft per roll) = 2 roll(s)",
+    "assumptions": [
+      "coverage_assumed_15sqft"
+    ],
+    "unit_kind": "roll"
+  },
+  "assumptions": [
+    "coverage_assumed_15sqft"
+  ],
+  "fallback_policy": "optional items dropped by ascending relevance, descending line total",
+  "fallback_applied": false,
+  "fallback_drops": [],
+  "sourced_cart": [
+    {
+      "bom_item": "Waterproof Marble Contact Paper Roll",
+      "priority": "Essential",
+      "quantity": 2,
+      "target_unit_budget": 25.0,
+      "sourced_title": "Adhesive Shelf Liner - Marble",
+      "unit_price": 7.99,
+      "line_total": 15.98,
+      "merchant": "target.com",
+      "buy_url": "https://buy.trychannel3.com/ZZ8MVob-QnTm-2b9gUc?o=01KDEVB8AWQ1EHFJD161BCWNJR&aid=01M64X3EJN3XDWFRRJP8FEGSM0&user_id=spectocart_demo_user",
+      "ai_reasoning": "Sufficient vinyl coverage is needed to fully cover the main countertop top and backsplash surfaces.",
+      "relevance_score": 3,
+      "matched_words": [
+        "contact",
+        "marble",
+        "paper"
+      ],
+      "win_reason": "relevance_tie_lowest_price"
+    },
+    {
+      "bom_item": "Vinyl Application Tool Kit",
+      "priority": "Essential",
+      "quantity": 1,
+      "target_unit_budget": 12.0,
+      "sourced_title": "Art3d Smoothing Tool Kit for Applying Peel and Stick Vinyl Backsplash Tile, Wall",
+      "unit_price": 7.82,
+      "line_total": 7.82,
+      "merchant": "wayfair.com",
+      "buy_url": "https://buy.trychannel3.com/oQJXJil-BIP9-2b9gUc?o=01M58WVGBXNGVFZAQXHX01S9WT&aid=01M64X3GT4508K49GZZ9YKN007&user_id=spectocart_demo_user",
+      "ai_reasoning": "A felt-edge squeegee prevents scratching during air bubble removal, and a precision knife ensures clean edge trims.",
+      "relevance_score": 2,
+      "matched_words": [
+        "tool",
+        "vinyl"
+      ],
+      "win_reason": "relevance_tie_lowest_price"
+    },
+    {
+      "bom_item": "Clear Waterproof Kitchen Silicone Sealant",
+      "priority": "Essential",
+      "quantity": 1,
+      "target_unit_budget": 10.0,
+      "sourced_title": "Clear Silicone Kleen Seam",
+      "unit_price": 5.98,
+      "line_total": 5.98,
+      "merchant": "menards.com",
+      "buy_url": "https://buy.trychannel3.com/Vn5zst0-KojF-2b9gUc?o=01M63VZQ05DE59CW86Y0MT7C1P&aid=01M64X3K72WD0NV8S6KJ12F7JX&user_id=spectocart_demo_user",
+      "ai_reasoning": "Seals the perimeter seam around edges and sink joins to prevent water from lifting the vinyl backing.",
+      "relevance_score": 2,
+      "matched_words": [
+        "clear",
+        "silicone"
+      ],
+      "win_reason": "relevance_tie_lowest_price"
+    },
+    {
+      "bom_item": "Heavy Duty Surface Degreaser Cleaner",
+      "priority": "Optional",
+      "quantity": 1,
+      "target_unit_budget": 8.0,
+      "sourced_title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+      "unit_price": 4.25,
+      "line_total": 4.25,
+      "merchant": "jbtools.com",
+      "buy_url": "https://buy.trychannel3.com/ADVi2Zm-9Hkm-2b9gUc?o=01M33K1VQPJ0GY8B896F3XXAGZ&aid=01M64X3NNQX7ASEHN5Z7Y5GKBX&user_id=spectocart_demo_user",
+      "ai_reasoning": "Ensures complete grease and residue removal before adhesive contact paper application for maximum longevity.",
+      "relevance_score": 4,
+      "matched_words": [
+        "cleaner",
+        "degreaser",
+        "duty",
+        "heavy"
+      ],
+      "win_reason": "relevance_tie_lowest_price"
+    }
+  ],
+  "sourced_total": 34.03,
+  "evaluated_by_item": [
+    {
+      "bom_item": "Waterproof Marble Contact Paper Roll",
+      "query": "waterproof marble peel and stick countertop contact paper roll",
+      "evaluated": [
+        {
+          "title": "Kitchen Oil-Proof Sticker",
+          "unit_price": 2.38,
+          "merchant": "wayfair.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "EasyLiner Removable Adhesive Shelf Liner",
+          "unit_price": 6.84,
+          "merchant": "walmart.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Con-Tact Brand Self-Adhesive Shelf Liner - Beige Marble Vinyl Roll",
+          "unit_price": 16.78,
+          "merchant": "lowes.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Con-Tact Creative Covering 18 In. x 9 Ft. White Marble Self-Adhesive Shelf Liner",
+          "unit_price": 16.43,
+          "merchant": "lowes.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Duck Peel & Stick Laminate Adhesive Covering",
+          "unit_price": 11.79,
+          "merchant": "cvs.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Countertop Prep Paper",
+          "unit_price": 5.97,
+          "merchant": "walmart.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "paper"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Adhesive Shelf Liner - Marble",
+          "unit_price": 7.99,
+          "merchant": "target.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": "relevance_tie_lowest_price"
+        },
+        {
+          "title": "Reynolds Kitchens Countertop Prep Paper",
+          "unit_price": 8.98,
+          "merchant": "samsclub.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "paper"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Duck EasyLiner Adhesive Laminate - Gray Marble",
+          "unit_price": 20.46,
+          "merchant": "dickblick.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Countertop Prep paper",
+          "unit_price": 3.29,
+          "merchant": "target.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "paper"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Smart Design 18\" x 20' Carrera Marble Adhesive Shelf Liner",
+          "unit_price": 8.49,
+          "merchant": "menards.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Marble Grey Blue Adhesive Film, 2ct.",
+          "unit_price": 23.99,
+          "merchant": "michaels.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Duck EasyLiner Adhesive Laminate - Black Marble",
+          "unit_price": 20.46,
+          "merchant": "dickblick.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "12 Pack: 12\" x 20ft. Blue Marble Hydro Sublimation Transfer Sheet",
+          "unit_price": 7.99,
+          "merchant": "michaels.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "marble"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Adhesive Covering",
+          "unit_price": 1.25,
+          "merchant": "dollartree.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Con-Tact Brand Self-Adhesive Vinyl Drawer and Shelf Liner - Italian Marble Desig",
+          "unit_price": 10.42,
+          "merchant": "lowes.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "contact",
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Scot Brushed Metal Look Contact Paper Gold",
+          "unit_price": 2.5,
+          "merchant": "wayfair.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Adhesive Plastic Liners",
+          "unit_price": 24.59,
+          "merchant": "walmart.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Marla Marble Paper Towel Holder",
+          "unit_price": 17.99,
+          "merchant": "containerstore.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Carrara Light Beige Adhesive Film, 2ct.",
+          "unit_price": 17.99,
+          "merchant": "michaels.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Paper Towel Holder",
+          "unit_price": 13.5,
+          "merchant": "rsvp-intl.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "paper"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Paper Towel Holder",
+          "unit_price": 32.99,
+          "merchant": "kohls.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "paper"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Paper Towel Holder",
+          "unit_price": 35.84,
+          "merchant": "macys.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "paper"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Multi Surface Self-Adhering Film",
+          "unit_price": 19.99,
+          "merchant": "acehardware.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Marble Paper Towel Holder",
+          "unit_price": 24.0,
+          "merchant": "anthropologie.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "marble",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Foiled Marble Granite Thick Cork Heat Resistant Placemats",
+          "unit_price": 18.62,
+          "merchant": "macys.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "marble"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Consalve Decorative Self-Adhesive Film Granite Stone",
+          "unit_price": 1.63,
+          "merchant": "wayfair.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "contact",
+            "paper"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        }
+      ],
+      "raw_products": {
+        "sha256": "a16996bc433f153b65a99041bbdc9b82415993a517a6679240ae92dd2f9deb17",
+        "size_bytes": 72005,
+        "note": "raw products truncated to hash; set DEBUG_CHANNEL3=1 to print full response"
+      },
+      "win_reason": "relevance_tie_lowest_price"
+    },
+    {
+      "bom_item": "Vinyl Application Tool Kit",
+      "query": "vinyl wrap tool kit squeegee felt edge utility knife",
+      "evaluated": [
+        {
+          "title": "Felt Edge Squeegee",
+          "unit_price": 5.99,
+          "merchant": "walmart.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Squeegee Felt Edge Scraper",
+          "unit_price": 4.89,
+          "merchant": "walmart.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Smoother & Utility Knife Kit",
+          "unit_price": 5.99,
+          "merchant": "menards.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Art3d Smoothing Tool Kit for Applying Peel and Stick Vinyl Backsplash Tile, Wall",
+          "unit_price": 7.82,
+          "merchant": "wayfair.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "tool",
+            "vinyl"
+          ],
+          "rejected_because": null,
+          "win_reason": "relevance_tie_lowest_price"
+        },
+        {
+          "title": "Smoother and Utility Knife",
+          "unit_price": 8.48,
+          "merchant": "wallpops.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "6D Carbon Fiber Vinyl Wrap with Scraper Tool",
+          "unit_price": 11.99,
+          "merchant": "lowes.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "tool",
+            "vinyl"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Leather and Vinyl Repair Kit",
+          "unit_price": 11.97,
+          "merchant": "walmart.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "vinyl"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Leather and Vinyl Repair Kit",
+          "unit_price": 19.99,
+          "merchant": "oreillyauto.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "vinyl"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Utility Knife And 10 ft. Tape Combo",
+          "unit_price": 11.99,
+          "merchant": "tractorsupply.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "9mm Snap-Off Utility Knife",
+          "unit_price": 10.99,
+          "merchant": "michaels.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Masterforce\u00ae Hook Utility Knife Blades - 50 Pack",
+          "unit_price": 10.99,
+          "merchant": "menards.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Masterforce\u00ae Hook Utility Knife Blades - 5 Pack",
+          "unit_price": 3.99,
+          "merchant": "menards.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "KRAFT TOOL DW529 Joint Knife",
+          "unit_price": 6.69,
+          "merchant": "newegg.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Trim and Molding Tool Set",
+          "unit_price": 5.49,
+          "merchant": "harborfreight.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Scraper Putty Knife",
+          "unit_price": 6.11,
+          "merchant": "jbtools.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Performance Tool W1197 38-Piece Compact Auto Tool Kit",
+          "unit_price": 9.99,
+          "merchant": "tools.woot.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Purdy\u00ae Premium 1-1/2\" Flexible High Stainless Steel Putty Knife",
+          "unit_price": 9.98,
+          "merchant": "menards.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Vinyl Wrap",
+          "unit_price": 10.78,
+          "merchant": "walmart.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "vinyl"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Premium 2\" Stiff High Stainless Steel Putty Knife",
+          "unit_price": 8.48,
+          "merchant": "menards.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Red Devil 4200 Professional Series 1.5\" Flexible Putty Knife",
+          "unit_price": 10.09,
+          "merchant": "staples.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Purdy Premium Putty Knife",
+          "unit_price": 9.39,
+          "merchant": "sherwin-williams.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Red Devil\u00ae Soft Grip Putty Knife Set - 4 Piece",
+          "unit_price": 11.99,
+          "merchant": "menards.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Red Devil\u00ae Soft Grip Putty Knife Set - 4 Piece",
+          "unit_price": 14.49,
+          "merchant": "farmandfleet.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "5-In-1 Multi-Purpose Painter's Tool",
+          "unit_price": 9.99,
+          "merchant": "acehardware.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "5-In-1 Multi-Purpose Painter's Tool",
+          "unit_price": 10.49,
+          "merchant": "truevalue.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Deburring Tool Kit",
+          "unit_price": 10.79,
+          "merchant": "newegg.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Titan 2-Pc Multi-Purpose Razor Scraper Set",
+          "unit_price": 11.0,
+          "merchant": "jbtools.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Titan 2-Pc Multi-Purpose Razor Scraper Set",
+          "unit_price": 39.49,
+          "merchant": "shop.advanceautoparts.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "5pcs Car Trim Removal Tool Kit No Scratch Plastic Auto Clip Fastener Remover Pry",
+          "unit_price": 11.99,
+          "merchant": "lowes.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "tool"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        }
+      ],
+      "raw_products": {
+        "sha256": "4c24d904e96169e60a2f232b0fbc2d8d3e9968b5a73b2d2b5bb6e325c2fcffa2",
+        "size_bytes": 74056,
+        "note": "raw products truncated to hash; set DEBUG_CHANNEL3=1 to print full response"
+      },
+      "win_reason": "relevance_tie_lowest_price"
+    },
+    {
+      "bom_item": "Clear Waterproof Kitchen Silicone Sealant",
+      "query": "clear silicone kitchen countertop caulk sealant waterproof",
+      "evaluated": [
+        {
+          "title": "Clear Silicone Kleen Seam",
+          "unit_price": 5.98,
+          "merchant": "menards.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "clear",
+            "silicone"
+          ],
+          "rejected_because": null,
+          "win_reason": "relevance_tie_lowest_price"
+        },
+        {
+          "title": "Silicone Seam Cover for Kitchen Range and Countertop",
+          "unit_price": 5.99,
+          "merchant": "fromrebel.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "kitchen",
+            "silicone"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Silicone Seam Cover for Kitchen Range and Countertop",
+          "unit_price": 9.99,
+          "merchant": "countrydoor.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "kitchen",
+            "silicone"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Mod Podge\u00ae Dishwasher-Safe Gloss in Clear | 8 fl oz | Michaels\u00ae",
+          "unit_price": 5.0,
+          "merchant": "dollargeneral.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "clear"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Mod Podge\u00ae Dishwasher-Safe Gloss in Clear | 8 fl oz | Michaels\u00ae",
+          "unit_price": 6.78,
+          "merchant": "walmart.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "clear"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Mod Podge\u00ae Dishwasher-Safe Gloss in Clear | 8 fl oz | Michaels\u00ae",
+          "unit_price": 8.49,
+          "merchant": "michaels.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "clear"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Gear Aid Seam Grip SIL Silicone Tent Sealant",
+          "unit_price": 10.0,
+          "merchant": "publiclands.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "sealant",
+            "silicone"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Kleen Seam Silicone Gap Protector",
+          "unit_price": 5.99,
+          "merchant": "tractorsupply.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "silicone"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Kleen Seam Silicone Gap Protector",
+          "unit_price": 6.99,
+          "merchant": "menards.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "silicone"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Kleen Seam Silicone Gap Protector",
+          "unit_price": 13.99,
+          "merchant": "target.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "silicone"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Caulk Finishing Set",
+          "unit_price": 8.98,
+          "merchant": "lowes.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Glass Table Top Bumper",
+          "unit_price": 9.99,
+          "merchant": "lowes.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Caulk Applicator Tool",
+          "unit_price": 7.48,
+          "merchant": "lowes.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Silicone O-Ring 33mm OD 27mm ID 3mm Width 10pcs Metric VMQ Sealing Gasket Replac",
+          "unit_price": 9.49,
+          "merchant": "lowes.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "silicone"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Circle Stretch Lids",
+          "unit_price": 9.99,
+          "merchant": "stasherbag.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Ikea 365+ Lid Rectangular Bamboo",
+          "unit_price": 5.0,
+          "merchant": "ikea.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Silicone for Body (HU-100)",
+          "unit_price": 2.5,
+          "merchant": "hurom.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "silicone"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "\u00d6verm\u00e4tt Food Cover",
+          "unit_price": 5.0,
+          "merchant": "ikea.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Seam Grip FC Fast Cure Seam Sealant",
+          "unit_price": 9.95,
+          "merchant": "ascentoutdoors.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Seam Grip FC Fast Cure Seam Sealant",
+          "unit_price": 9.95,
+          "merchant": "campmor.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Homax Caulk Angle Nozzle",
+          "unit_price": 10.0,
+          "merchant": "lowes.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Caulk Remover Tool",
+          "unit_price": 7.99,
+          "merchant": "tractorsupply.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Antilop Tray Mat",
+          "unit_price": 5.0,
+          "merchant": "ikea.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Goo Gone Caulk Remover",
+          "unit_price": 9.99,
+          "merchant": "truevalue.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Baby Proofing Corner Protectors",
+          "unit_price": 8.99,
+          "merchant": "zulaykitchen.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Baby Proofing Corner Protectors",
+          "unit_price": 18.89,
+          "merchant": "macys.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Command Assorted Clear Strips",
+          "unit_price": 3.94,
+          "merchant": "menards.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "clear"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Zwilling Fresh & Save Cube",
+          "unit_price": 9.99,
+          "merchant": "zwilling.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Mod Podge",
+          "unit_price": 8.99,
+          "merchant": "hobbylobby.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        },
+        {
+          "title": "Caulk Cartridge Cap",
+          "unit_price": 2.99,
+          "merchant": "menards.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "sealant"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Sandwich Bag",
+          "unit_price": 6.99,
+          "merchant": "stasherbag.com",
+          "relevance_score": 0,
+          "matched_words": [],
+          "rejected_because": "score_zero",
+          "win_reason": null
+        }
+      ],
+      "raw_products": {
+        "sha256": "3144d5833b228c586074277700dddd407ea44b58dd9d6281dbf2059358bc9c1f",
+        "size_bytes": 89147,
+        "note": "raw products truncated to hash; set DEBUG_CHANNEL3=1 to print full response"
+      },
+      "win_reason": "relevance_tie_lowest_price"
+    },
+    {
+      "bom_item": "Heavy Duty Surface Degreaser Cleaner",
+      "query": "heavy duty surface degreaser spray kitchen prep",
+      "evaluated": [
+        {
+          "title": "Heavy Duty Cleaner Degreaser & Disinfectant",
+          "unit_price": 5.99,
+          "merchant": "jbtools.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Heavy Duty Cleaner Degreaser & Disinfectant",
+          "unit_price": 11.99,
+          "merchant": "walmart.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Cleaner Degreaser",
+          "unit_price": 5.99,
+          "merchant": "farmandfleet.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Cleaner Degreaser",
+          "unit_price": 11.19,
+          "merchant": "staples.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "RMR Solutions Ready to Use Heavy Duty 32 -fl oz Degreaser",
+          "unit_price": 7.99,
+          "merchant": "northerntool.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+          "unit_price": 4.25,
+          "merchant": "jbtools.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": "relevance_tie_lowest_price"
+        },
+        {
+          "title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+          "unit_price": 5.78,
+          "merchant": "homedepot.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+          "unit_price": 6.49,
+          "merchant": "truevalue.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+          "unit_price": 7.99,
+          "merchant": "sherwin-williams.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+          "unit_price": 15.99,
+          "merchant": "cpooutlets.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Zep Heavy-Duty Citrus Degreaser & Cleaner",
+          "unit_price": 7.98,
+          "merchant": "homedepot.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Powerwash Heavy Duty Dish Spray All-Purpose Cleaner and Degreaser",
+          "unit_price": 5.99,
+          "merchant": "cvs.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Powerwash Heavy Duty Dish Spray All-Purpose Cleaner and Degreaser",
+          "unit_price": 6.0,
+          "merchant": "dollargeneral.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Heavy Duty Pro-Strength Degreaser",
+          "unit_price": 7.99,
+          "merchant": "tractorsupply.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Zep Heavy-Duty Citrus Degreaser",
+          "unit_price": 6.48,
+          "merchant": "lowes.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Foaming Multi-Surface All Purpose Cleaner Degreaser Spray",
+          "unit_price": 1.45,
+          "merchant": "shop.advanceautoparts.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "surface"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Dawn Professional Heavy Duty Degreaser",
+          "unit_price": 7.98,
+          "merchant": "menards.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Weiman Heavy Duty Gas Range Cleaner & Degreaser",
+          "unit_price": 6.99,
+          "merchant": "athome.com",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Goof Off\u00ae Household Heavy Duty Remover Spray",
+          "unit_price": 6.39,
+          "merchant": "menards.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": "head_noun_missing",
+          "win_reason": null
+        },
+        {
+          "title": "Goof Off\u00ae Household Heavy Duty Remover Spray",
+          "unit_price": 9.68,
+          "merchant": "lowes.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Goof Off\u00ae Household Heavy Duty Remover Spray",
+          "unit_price": 10.99,
+          "merchant": "truevalue.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Method Heavy Duty Lemongrass Degreaser",
+          "unit_price": 4.38,
+          "merchant": "menards.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Mr. Clean PRO Commercial All Surface Cleaner Spray, 32 oz. (24349)",
+          "unit_price": 6.89,
+          "merchant": "staples.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "surface"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Power Degreaser",
+          "unit_price": 6.99,
+          "merchant": "tractorsupply.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "degreaser"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Cleaner Degreaser, Aerosol Can, 20 oz.",
+          "unit_price": 7.39,
+          "merchant": "newegg.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Dawn Dish Spray Heavy Duty, 16 oz.",
+          "unit_price": 6.99,
+          "merchant": "tractorsupply.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": "head_noun_missing",
+          "win_reason": null
+        },
+        {
+          "title": "Heavy Duty Degreaser Oven Cleaner and Stove Top Cleaner",
+          "unit_price": 5.99,
+          "merchant": "grove.co",
+          "relevance_score": 4,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "duty",
+            "heavy"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Orange Goop\u00ae Degreaser Spray",
+          "unit_price": 4.99,
+          "merchant": "menards.com",
+          "relevance_score": 1,
+          "matched_words": [
+            "degreaser"
+          ],
+          "rejected_because": "insufficient_relevance",
+          "win_reason": null
+        },
+        {
+          "title": "Multi-Surface Disinfectant Degreaser",
+          "unit_price": 5.92,
+          "merchant": "walmart.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "degreaser",
+            "surface"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Krud Kutter Kitchen Degreaser All-Purpose Cleaner 32 oz Spray",
+          "unit_price": 7.99,
+          "merchant": "acehardware.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Tough Task Cleaner-Degreaser",
+          "unit_price": 5.59,
+          "merchant": "farmandfleet.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Tough Task Cleaner-Degreaser",
+          "unit_price": 5.95,
+          "merchant": "shop.advanceautoparts.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Tough Task Cleaner-Degreaser",
+          "unit_price": 7.38,
+          "merchant": "lowes.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Tough Task Cleaner-Degreaser",
+          "unit_price": 8.99,
+          "merchant": "harborfreight.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": "price_over_cap",
+          "win_reason": null
+        },
+        {
+          "title": "Multi-Surface Engine Cleaner & Degreaser",
+          "unit_price": 7.99,
+          "merchant": "walmart.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "surface"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Mean Green Orange Champ Multi-Surface Cleaner Degreaser Citrus",
+          "unit_price": 4.49,
+          "merchant": "truevalue.com",
+          "relevance_score": 3,
+          "matched_words": [
+            "cleaner",
+            "degreaser",
+            "surface"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        },
+        {
+          "title": "Fresquito Cleaner & Degreaser",
+          "unit_price": 7.49,
+          "merchant": "cvs.com",
+          "relevance_score": 2,
+          "matched_words": [
+            "cleaner",
+            "degreaser"
+          ],
+          "rejected_because": null,
+          "win_reason": null
+        }
+      ],
+      "raw_products": {
+        "sha256": "4ed3b571a02e1b774246fe092d6b3386c190956fe66b0d22f78083619ee6cc88",
+        "size_bytes": 102819,
+        "note": "raw products truncated to hash; set DEBUG_CHANNEL3=1 to print full response"
+      },
+      "win_reason": "relevance_tie_lowest_price"
+    }
+  ],
+  "steps": [
+    {
+      "n": 1,
+      "action": "Clean and degrease the countertop surface thoroughly",
+      "item": "Heavy Duty Surface Degreaser Cleaner",
+      "est_min": 20
+    },
+    {
+      "n": 2,
+      "action": "Measure and cut the contact paper to size",
+      "item": "Waterproof Marble Contact Paper Roll",
+      "est_min": 25
+    },
+    {
+      "n": 3,
+      "action": "Apply vinyl paper and smooth out air bubbles",
+      "item": "Vinyl Application Tool Kit",
+      "est_min": 40
+    },
+    {
+      "n": 4,
+      "action": "Trim excess vinyl around edges and sink",
+      "item": "Vinyl Application Tool Kit",
+      "est_min": 15
+    },
+    {
+      "n": 5,
+      "action": "Apply silicone sealant along edges and around sink",
+      "item": "Clear Waterproof Kitchen Silicone Sealant",
+      "est_min": 20
+    }
+  ],
+  "critic_verdicts": [
+    {
+      "bom_item": "Waterproof Marble Contact Paper Roll",
+      "sourced_title": "Adhesive Shelf Liner - Marble",
+      "verdict": {
+        "plausible": true,
+        "reason": "Adhesive shelf liners with a marble pattern serve the exact same function and category as marble contact paper rolls."
+      }
+    },
+    {
+      "bom_item": "Vinyl Application Tool Kit",
+      "sourced_title": "Art3d Smoothing Tool Kit for Applying Peel and Stick Vinyl Backsplash Tile, Wall",
+      "verdict": {
+        "plausible": true,
+        "reason": "The sourced product is a tool kit specifically designed for applying peel and stick vinyl."
+      }
+    },
+    {
+      "bom_item": "Clear Waterproof Kitchen Silicone Sealant",
+      "sourced_title": "Clear Silicone Kleen Seam",
+      "verdict": {
+        "plausible": false,
+        "reason": "Clear Silicone Kleen Seam is a specialized seam sealant rather than a kitchen-grade silicone sealant."
+      }
+    },
+    {
+      "bom_item": "Heavy Duty Surface Degreaser Cleaner",
+      "sourced_title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+      "verdict": {
+        "plausible": true,
+        "reason": "The sourced product is a heavy duty cleaner and degreaser, directly matching the BOM item requirements."
+      }
+    }
+  ],
+  "paypal_order_id": "",
+  "paypal_status": "",
+  "paypal_total_usd": "",
+  "paypal_approve_url": "",
+  "paypal_request_id": "",
+  "capture_id": "",
+  "capture_status": "",
+  "capture_fee_usd": "",
+  "capture_net_usd": "",
+  "webhook_event_id": ""
+}
