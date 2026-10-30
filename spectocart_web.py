@@ -694,21 +694,43 @@ def api_vault_charge():
 # ---------------------------------------------------------------------
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    """Webhook listener v2 (2026-10-30) - verification gate + dedupe.
+
+    Works-live rules, in order:
+    1) If PAYPAL_WEBHOOK_ID is set, the event MUST verify via
+       POST /v1/notifications/verify-webhook-signature with
+       verification_status == "SUCCESS" before ANY order is touched.
+       Unverified / failed / error events are logged in
+       webhook_events.json with verified=<status> and return 200
+       (so PayPal does not retry forever), but do NOT update orders.
+       A listener that trusts the payload without verification is
+       worse than no listener.
+    2) Dedupe by event id: if this event id is already in
+       webhook_events.json, log it as "duplicate (ignored)" and
+       return 200 without updating the order a second time.
+    3) Only then, for PAYMENT.CAPTURE.COMPLETED / REFUNDED, update
+       the matching order in orders.json. For REFUNDED, set BOTH
+       status and capture_status to REFUNDED, so the dashboard
+       and any receipt reader see the same state.
+    """
     event = request.get_json(silent=True) or {}
     event_type = event.get("event_type", "unknown")
     event_id = event.get("id", "")
-    verified = "not attempted (no PAYPAL_WEBHOOK_ID in .env)"
 
+    events = _load_json(WEBHOOK_FILE, [])
+    if event_id and any(e.get("event_id") == event_id for e in events):
+        events.insert(0, {
+            "received_at": datetime.now(timezone.utc).isoformat(),
+            "event_type": event_type,
+            "event_id": event_id,
+            "verified": "duplicate (ignored)",
+        })
+        _save_json(WEBHOOK_FILE, events)
+        return "OK", 200
+
+    verified = "not attempted (no PAYPAL_WEBHOOK_ID in .env)"
     webhook_id = os.getenv("PAYPAL_WEBHOOK_ID", "").strip()
     if webhook_id:
-        # PayPal verifies by re-posting the headers + event back to
-        # PayPal. The event must be sent exactly as received - do not
-        # re-format it before this call. Flask's get_json already
-        # parsed it, so for a strict production check, keep the raw
-        # body (request.get_data) and send that. This demo sends the
-        # parsed event back, which PayPal may reject - in that case
-        # the log will say so, and the dashboard update below still
-        # happens only from the event type, marked unverified.
         try:
             token = get_paypal_access_token()
             verify_res = requests.post(
@@ -725,24 +747,69 @@ def webhook():
                 },
                 timeout=10,
             )
-            verified = str(verify_res.json().get("verification_status", verify_res.status_code))
+            try:
+                verify_body = verify_res.json()
+            except Exception:
+                verify_body = {}
+            verified = str(verify_body.get("verification_status", verify_res.status_code))
+            # Diagnostic only (2026-10-30): PayPal returns 400 with an
+            # error body, not a verification_status, so the old code
+            # hid the real reason behind "400". Keep the body (first
+            # 500 chars, no secrets) in the event log and in the
+            # Flask log, so the next delivery tells us WHY it failed.
+            verify_detail = str(verify_body)[:500] if verified != "SUCCESS" else ""
+            print(f"Webhook verify: {event_type} {event_id} -> {verified} detail={verify_detail}")
         except Exception as exc:  # noqa: BLE001 - demo logging only
             verified = f"verification error: {exc}"
+        if verified != "SUCCESS":
+            events.insert(0, {
+                "received_at": datetime.now(timezone.utc).isoformat(),
+                "event_type": event_type,
+                "event_id": event_id,
+                "verified": verified,
+                "verify_detail": verify_detail if verified != "SUCCESS" else "",
+            })
+            _save_json(WEBHOOK_FILE, events)
+            return "OK", 200
 
-    # Dashboard update from the event itself (not from the button).
     resource = event.get("resource", {}) if isinstance(event.get("resource"), dict) else {}
+    related = resource.get("supplementary_data", {}).get("related_ids", {})
     if event_type == "PAYMENT.CAPTURE.COMPLETED":
-        # resource.supplementary_data.related_ids.order_id holds the order
-        related = resource.get("supplementary_data", {}).get("related_ids", {})
         if related.get("order_id"):
             _update_order(related["order_id"], status="COMPLETED (webhook)",
                           capture_id=resource.get("id", ""))
     elif event_type == "PAYMENT.CAPTURE.REFUNDED":
-        related = resource.get("supplementary_data", {}).get("related_ids", {})
-        if related.get("order_id"):
-            _update_order(related["order_id"], status="REFUNDED (webhook)")
+        # FIXED 2026-10-30: a REFUNDED event's resource is a refund
+        # object, not a capture object, so it does NOT carry
+        # supplementary_data.related_ids.order_id the way a
+        # COMPLETED capture does. That is why the verified REFUNDED
+        # event above was logged SUCCESS but updated nothing - the
+        # old code silently skipped it when related order_id was
+        # missing. Fall back to matching by capture id: first
+        # resource.capture_id, then the "up" link to
+        # /v2/payments/captures/<CAPTURE_ID>, then find the order
+        # in orders.json with that capture_id.
+        refund_order_id = related.get("order_id")
+        if not refund_order_id:
+            cap_id = resource.get("capture_id", "")
+            if not cap_id:
+                for link in resource.get("links", []) or []:
+                    href = link.get("href", "") if isinstance(link, dict) else ""
+                    if "/captures/" in href:
+                        cap_id = href.rsplit("/captures/", 1)[-1].split("/")[0].split("?")[0]
+                        break
+            if cap_id:
+                for _o in _load_json(ORDERS_FILE, []):
+                    if _o.get("capture_id") == cap_id:
+                        refund_order_id = _o.get("order_id")
+                        break
+                print(f"Webhook REFUNDED: matched capture {cap_id} to order {refund_order_id}")
+            else:
+                print(f"Webhook REFUNDED: no order_id and no capture_id in resource, cannot update order")
+        if refund_order_id:
+            _update_order(refund_order_id, status="REFUNDED (webhook)",
+                          capture_status="REFUNDED")
 
-    events = _load_json(WEBHOOK_FILE, [])
     events.insert(0, {
         "received_at": datetime.now(timezone.utc).isoformat(),
         "event_type": event_type,
@@ -750,7 +817,6 @@ def webhook():
         "verified": verified,
     })
     _save_json(WEBHOOK_FILE, events)
-    # Always return 200 so PayPal does not retry a demo event forever.
     return "OK", 200
 
 
