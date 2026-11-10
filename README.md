@@ -11,7 +11,7 @@ This honesty matters, and it is stated up front: SpecToCart aggregates sourced i
 - **Gemini 3.6 Flash (primary, proven live 2026-10-28) — BOM, step plan, critic.** Gemini Vision reads the uploaded project photo and returns a structured Bill of Materials (3-5 items, quantity, max unit price, priority, search query, reason). A second Gemini call per item (critic) checks category/use plausibility. A third call generates the ordered step plan.
 - **Gemini 3.8 Flash (fallback).** Patch 8 v6 falls back in-family on transient errors only, then retries the chain. No other model is used.
 - **Channel3 Product Graph** — live product search and relevance scoring (not a generic web search).
-- **PayPal Sandbox** — order, approval, status, capture, refund, Vault (live-tested second charge, web app), webhooks (pending public URL). No real money, sandbox test accounts only.
+- **PayPal Sandbox** — order, approval, status, capture, refund, Vault (live-tested second charge, web app), webhooks (live-tested 2026-10-30, see below). No real money, sandbox test accounts only.
 - **Frameworks:** Python, Pydantic (structured Gemini output), Flask (web app), PayPal JavaScript SDK (web checkout button, server-side create/capture).
 
 ## How to score this in 3 minutes (judging criteria)
@@ -58,6 +58,19 @@ This honesty matters, and it is stated up front: SpecToCart aggregates sourced i
 - **429 RESOURCE_EXHAUSTED is a Gemini API rate limit, not a code failure.** One full `--critic` run uses about 6 calls (BOM + 4 critic + step plan). Run without `--critic` for most tests (2 calls per run), save `--critic` for final verification, and wait for the quota window to reset if you hit the limit. Do not hammer retries on a 429 — wait for the `retryDelay` Google returns.
 - **Demo mode (offline, no API calls).** `python3 core_pipeline.py demo-fallback demo/saved_cart.json 40` loads a saved cart, applies the budget fallback at the given budget, and writes a demo receipt labelled `demo_mode: true`. This exists for reproducibility, not as a workaround for API limits: Gemini regenerates the BOM on every live run, so a saved cart is the only way to re-record the exact same tight-budget fallback demo twice. Demo data is never presented as live data. The committed `demo/saved_cart.json` was regenerated 2026-10-28 evening from the clean Patch 8 v6 $49.79 run (order `1GU80970KT059953X`, capture `4ET24157KE976933Y`): wrap Con-Tact $16.78x2, tool Smoother & Utility Knife Kit $5.99, sealant Silicone Seam Cover $5.99 (critic REJECT, kept non-strict), degreaser Spray Nine $4.25. The old wall-sticker and "Silicone for Body" matches are gone. Tight-budget fallback demo: `python3 core_pipeline.py demo-fallback demo/saved_cart.json 48` gives $49.79 -> $45.54, Optional degreaser dropped.
 
+## Try it without any API keys (2 minutes)
+
+```bash
+git clone https://github.com/alexowoade/spectocart
+cd spectocart
+python3 -m venv venv
+venv/bin/pip install requests python-dotenv pillow pydantic google-genai flask
+venv/bin/python test_spectocart_patch8.py   # 35 tests
+venv/bin/python core_pipeline.py demo-fallback demo/saved_cart.json 48   # $49.79 -> $45.54
+```
+
+The full pipeline needs `GEMINI_API_KEY`, `CHANNEL3_API_KEY`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` in `.env`.
+
 ## Setup (Ubuntu, Python 3.12)
 
 ```bash
@@ -99,10 +112,8 @@ The web app must sit next to `core_pipeline.py` and use the same `.env`. Only `P
 
 The endpoint `https://api.trychannel3.com/v1/search` (header `x-api-key`, `x-user-id: spectocart_demo_user`, `filters.price.max_price`, `availability: ["InStock"]`) has been proven working empirically across many live runs. Raw schema verified 2026-10-28 evening with `DEBUG_CHANNEL3=1`: product fields are `id, title, description, brands[], images[], category{slug,title,path[]}, materials[], key_features[], colors[], offers[]{url,domain,price{price,compare_at_price,currency},availability,condition,max_commission_rate,dimensions}, variants, structured_attributes, ratings`. `buy_url` populates from `offers[0].url` (a `buy.trychannel3.com` link) — there is no top-level `buy_url` field. Merchant = `offers[0].domain`. Category IS present. Shipping cost / delivery time is NOT present in the raw JSON, so shipping is not claimed. Cross-merchant grouping and single-store cart remain Future work, not a current claim.
 
-## Future work (honestly not yet live-tested)
+## Future work
 
-- **PayPal Vault (enabled, not yet integrated)**: sandbox Save payment methods is ON for the Spec2cart app, and a throwaway setup-token test passed 2026-10-28 evening (setup token 201, payment token 201, no charge, customer id present). The returning-DIYer story is: first project manual approval, second project from a vaulted method under an explicit Billing Agreement / future-payment consent — not a generic saved card, and not recurring replenishment. The second-charge integration (fresh token -> real order in `/orders`, receipt recording 'vaulted method') is still to be built and live-tested after the Gate, and is not yet in the web app. If that second charge is not live-tested, Vault must not be claimed as working.
-- **Webhooks on a public URL**: the `/webhook` listener exists and logs/verify-attempts events, and updates `/orders` from `PAYMENT.CAPTURE.COMPLETED` / `PAYMENT.CAPTURE.REFUNDED`, with signature verification via `/v1/notifications/verify-webhook-signature` and idempotent duplicate handling to be live-tested. PayPal can only deliver these to a public HTTPS URL (Render or a tunnel), which is not yet set up, so webhook delivery itself is not yet live-tested. On localhost alone, no webhook delivery is expected. Kill-switch: if signature verification is not clean by end of day 1 of the webhook block, ship without webhooks.
 - **Single-store cart**, **cheaper-Optional substitution** (currently Optional items are dropped, never substituted), **subscriptions, Pay Later, and disputes** — deliberately not built, because they do not differentiate a project-specific procurement tool and would be checklist depth.
 - **Web app project math, step plan, and critic** — currently CLI-only.
 
