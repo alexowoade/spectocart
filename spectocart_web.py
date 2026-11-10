@@ -236,6 +236,15 @@ def cart_load_demo():
     if not saved:
         return redirect(url_for("home"))
     raw_items = saved.get("items", [])
+    # The demo file keeps per-item candidates under evaluated_by_item; merge
+    # them onto the rows so /cart can render the Audit drawers (the live
+    # /analyze path already sets "evaluated" on each row).
+    eval_by_item = {
+        e.get("bom_item"): e.get("evaluated", [])
+        for e in (saved.get("evaluated_by_item") or [])
+    }
+    for _r in raw_items:
+        _r.setdefault("evaluated", eval_by_item.get(_r.get("bom_item"), []))
     kept, drops, grand_total, ok = apply_budget_fallback(raw_items, budget)
     pm = compute_project_math(96.0, 25.0, 15.0, fallback_bom_quantity=2)
     cart_obj = {
@@ -250,6 +259,8 @@ def cart_load_demo():
         "all_sourced_items": [dict(r) for r in raw_items],
         "bom": saved.get("bom", []),
         "evaluated_by_item": saved.get("evaluated_by_item", []),
+        "critic_verdicts": saved.get("critic_verdicts", []),
+        "steps": saved.get("steps", []),
         "project_math": asdict(pm),
         "fallback_applied": bool(drops),
         "fallback_policy": FALLBACK_POLICY,
@@ -406,6 +417,18 @@ def cart():
     pm = cart.get("project_math") or {}
     math_str = pm.get("derivation") or "Using BOM quantity"
 
+    critic_by_item = {
+        v.get("bom_item"): v.get("verdict", {})
+        for v in (cart.get("critic_verdicts") or [])
+    }
+    critic_rejects = sum(1 for v in critic_by_item.values() if v.get("plausible") is False)
+    critic_banner = ""
+    if critic_rejects:
+        critic_banner = (
+            f"<div style='font-size:0.82rem;color:#fca5a5;margin-top:0.25rem'>"
+            f"&#10007; Critic REJECTs: {critic_rejects} — logged; not acted on without --strict-critic</div>"
+        )
+
     if cart.get("fallback_applied"):
         drops_list = "".join(
             f"<li>Dropped <b>{d.get('bom_item')}</b> (${d.get('line_total'):.2f}, Optional, score {d.get('relevance_score')}) — {d.get('reason', '')}</li>"
@@ -417,6 +440,7 @@ def cart():
             <span class="badge badge-warn">&#9889; SPEND POLICY FALLBACK ENFORCED</span>
             <div style="font-weight:700;margin-top:0.35rem">Initial Sourced Cart (${orig_total:.2f}) exceeded Authorized Cap (${cart['budget']:.2f}). Auto-trimmed to <b>${cart['grand_total']:.2f}</b> (Saved ${saved_delta:.2f}).</div>
             <ul style="margin:0.4rem 0 0;padding-left:1.2rem;font-size:0.84rem;color:#fde68a">{drops_list}</ul>
+            {critic_banner}
           </div>
           <form action="/cart/rebudget" method="post" style="display:flex;gap:0.5rem;align-items:center">
             <input type="hidden" name="budget" value="150">
@@ -430,6 +454,7 @@ def cart():
             <span class="badge badge-ok">&#10003; SPEND POLICY COMPLIANT</span>
             <div style="font-weight:700;margin-top:0.35rem">Sourced Cart (<b>${cart['grand_total']:.2f}</b>) is within Authorized Cap (<b>${cart['budget']:.2f}</b>) &bull; ${headroom:.2f} Budget Headroom</div>
             <div style="font-size:0.82rem;color:var(--muted)">Project Math: <code>{math_str}</code></div>
+            {critic_banner}
           </div>
           <form action="/cart/rebudget" method="post" style="display:flex;gap:0.5rem;align-items:center">
             <input type="hidden" name="budget" value="48">
@@ -452,10 +477,18 @@ def cart():
             )
             rejected_html = f"<details><summary>Audit {len(rejected_items)} rejected Channel3 candidates</summary>{rej_lines}</details>"
 
+        critic = critic_by_item.get(row["bom_item"]) or {}
+        critic_html = ""
+        if critic and critic.get("plausible") is False:
+            critic_html = (
+                f"<div style='margin-top:0.35rem;color:#fca5a5;font-size:0.78rem'>"
+                f"&#10007; <b>Critic REJECT:</b> {critic.get('reason', '')}</div>"
+            )
+
         rows += (
             f"<tr>"
             f"<td><b>{row['bom_item']}</b><br><span class='badge {p_badge}'>{row['priority']}</span> &bull; Qty: {row['quantity']}</td>"
-            f"<td><b>{row['sourced_title']}</b> <span style='color:var(--muted)'>[{row['merchant']}]</span><br>{buy}{rejected_html}</td>"
+            f"<td><b>{row['sourced_title']}</b> <span style='color:var(--muted)'>[{row['merchant']}]</span><br>{buy}{rejected_html}{critic_html}</td>"
             f"<td>${row['unit_price']:.2f}<br><small style='color:var(--muted)'>Cap: ${row.get('target_unit_budget', 0):.2f}</small></td>"
             f"<td style='font-weight:700;color:#38bdf8'>${row['line_total']:.2f}</td>"
             f"<td><span class='badge badge-ok'>Score {row['relevance_score']}</span><br>"
@@ -494,6 +527,18 @@ def cart():
           <p style="color:var(--muted);margin:0.35rem 0 0">No vaulted token saved yet. <a href='/vault'>Save your PayPal on /vault</a> to unlock 1-click buyer-not-present settlement for future projects.</p>
         </div>"""
 
+    steps_rows = "".join(
+        f"<tr><td>Step {s.get('n')}</td><td>{s.get('action')}</td><td>{s.get('item')}</td><td>{s.get('est_min')} min</td></tr>"
+        for s in (cart.get("steps") or [])
+    )
+    steps_html = ""
+    if steps_rows:
+        steps_html = (
+            "<div class='card' style='margin-top:1rem'>"
+            "<h2 style='margin-top:0'>Install Step Plan</h2>"
+            "<table><tr><th>Step</th><th>Action</th><th>Item</th><th>Est.</th></tr>"
+            f"{steps_rows}</table></div>"
+        )
     ag_json = json.dumps(ag_rows)
     return f"""<!doctype html><html><head><title>SpecToCart — Spend Control & Cart</title>{PAGE_CSS}</head><body>
 {NAV_HTML}
@@ -534,6 +579,7 @@ def cart():
     {vault_html}
   </div>
 </div>
+{steps_html}
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
 <script>
 const rowData = {ag_json};

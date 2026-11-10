@@ -34,6 +34,40 @@
     }
   ],
   "budget": 150.0,
+  "critic_verdicts": [
+    {
+      "bom_item": "Waterproof Marble Contact Paper Roll",
+      "sourced_title": "Con-Tact Brand Self-Adhesive Shelf Liner - Beige Marble Vinyl Roll",
+      "verdict": {
+        "plausible": true,
+        "reason": "The sourced product is a self-adhesive vinyl roll with a beige marble design, which directly matches the category and intended use of waterproof marble contact paper."
+      }
+    },
+    {
+      "bom_item": "Vinyl Application Squeegee and Utility Knife Kit",
+      "sourced_title": "Smoother & Utility Knife Kit",
+      "verdict": {
+        "plausible": true,
+        "reason": "The sourced product includes both a smoothing squeegee tool and a utility knife intended for vinyl and wallpaper application."
+      }
+    },
+    {
+      "bom_item": "Clear Waterproof Kitchen Silicone Sealant",
+      "sourced_title": "Silicone Seam Cover for Kitchen Range and Countertop",
+      "verdict": {
+        "plausible": false,
+        "reason": "The BOM item is a liquid caulk/sealant, whereas the sourced product is a solid gap cover strip."
+      }
+    },
+    {
+      "bom_item": "Heavy-Duty Degreaser Surface Cleaner",
+      "sourced_title": "Spray Nine 26832 Heavy Duty Cleaner Degreaser and Disinfectant",
+      "verdict": {
+        "plausible": true,
+        "reason": "The sourced product is a heavy-duty cleaner and degreaser that directly matches the required category and function of the BOM item."
+      }
+    }
+  ],
   "evaluated_by_item": [
     {
       "bom_item": "Waterproof Marble Contact Paper Roll",
@@ -6427,5 +6461,31 @@
   ],
   "note": "Saved cart from the 2026-10-28 Patch 8 --critic live run, total $49.79, PayPal order 1GU80970KT059953X, capture 4ET24157KE976933Y, fee $2.23, net $47.56. Use this file for the re-recordable fallback demo, not a fresh Gemini run, because Gemini regenerates the BOM every time. Demo-fallback example: python3 core_pipeline.py demo-fallback demo/saved_cart.json 48",
   "photo_path": "sample_countertop.jpg",
-  "project_title": "Kitchen Countertop Marble Vinyl Wrap"
+  "project_title": "Kitchen Countertop Marble Vinyl Wrap",
+  "steps": [
+    {
+      "n": 1,
+      "action": "Clean and degrease the countertop surface thoroughly",
+      "item": "Heavy-Duty Degreaser Surface Cleaner",
+      "est_min": 15
+    },
+    {
+      "n": 2,
+      "action": "Measure countertop dimensions and cut contact paper with extra overhang",
+      "item": "Waterproof Marble Contact Paper Roll",
+      "est_min": 20
+    },
+    {
+      "n": 3,
+      "action": "Apply vinyl wrap, smooth out air bubbles, and trim excess edges",
+      "item": "Vinyl Application Squeegee and Utility Knife Kit",
+      "est_min": 45
+    },
+    {
+      "n": 4,
+      "action": "Seal seams along sink perimeter and backsplash edges",
+      "item": "Clear Waterproof Kitchen Silicone Sealant",
+      "est_min": 20
+    }
+  ]
 }
