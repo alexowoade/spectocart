@@ -91,7 +91,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request, redirect, url_for
+from flask import Flask, abort, jsonify, request, redirect, send_file, url_for
 
 # Reuse the proven pipeline - do not copy its logic here.
 from core_pipeline import (
@@ -314,7 +314,7 @@ def cart():
 <h1>{cart['project_title']}</h1>
 <p>Budget: ${cart['budget']:.2f} &nbsp; Sourced total: <b>${cart['grand_total']:.2f}</b></p>
 {fallback_html}
-<table><tr><th>BOM item</th><th>Sourced product</th><th>Unit</th><th>Line total</th><th>Relevance</th></tr>{rows}</table>
+<table><tr><th>BOM item</th><th>Selected Channel3 SKU</th><th>Unit price</th><th>Line total</th><th>Relevance &amp; selection reason</th></tr>{rows}</table>
 <h2>Pay with PayPal (Sandbox)</h2>
 <p>Click the PayPal button. Your server creates the order, PayPal approves it, your server captures it.</p>
 {vault_html}
@@ -348,6 +348,77 @@ paypal.Buttons({{
 </body></html>"""
 
 
+
+@app.route("/receipt/<order_id>")
+def receipt_view(order_id):
+    # Order IDs are PayPal IDs; reject anything that could walk out
+    # of the working directory.
+    if not order_id or "/" in order_id or ".." in order_id:
+        abort(404)
+    path = f"spectocart_receipt_{order_id}.json"
+    if not os.path.exists(path):
+        abort(404)
+    with open(path, encoding="utf-8") as f:
+        r = json.load(f)
+    drops = "".join(
+        f"<div style='color:#fbbf24'>&#10007; {d.get('bom_item')} (${d.get('line_total', 0):.2f})</div>"
+        for d in (r.get("fallback_drops") or [])
+    )
+    rejected = ""
+    for item in (r.get("evaluated_by_item") or []):
+        for c in (item.get("evaluated") or []):
+            if c.get("rejected_because"):
+                rejected += (
+                    f"<div style='color:#fca5a5'>&#10007; {str(c.get('title', ''))[:60]} — "
+                    f"{c.get('rejected_because')}</div>"
+                )
+    math_html = ""
+    pm = r.get("project_math") or {}
+    if pm.get("derivation"):
+        math_html = f"<dt>Project Math</dt><dd>{pm.get('derivation')}</dd>"
+    demo = " · DEMO MODE" if r.get("demo_mode") else ""
+    return f"""<!doctype html><html><head><title>Reconciliation — {r.get('paypal_order_id')}</title>{PAGE_CSS}</head><body>
+<nav><a href="/">New project</a> <a href="/orders">Orders dashboard</a></nav>
+<h1>SpecToCart Reconciliation — {r.get('project_title')}</h1>
+<p style="color:#94a3b8">{r.get('generated_at')}{demo}</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+<div style="background:#1e293b;border-radius:8px;padding:1.5rem">
+<h2 style="color:#34d399;font-size:0.85rem;letter-spacing:0.1em">PAYPAL SETTLEMENT</h2>
+<dl>
+<dt>Order ID</dt><dd>{r.get('paypal_order_id') or '—'}</dd>
+<dt>Order Status</dt><dd>{r.get('paypal_status') or '—'}</dd>
+<dt>Capture ID</dt><dd>{r.get('capture_id') or '—'}</dd>
+<dt>Capture Status</dt><dd>{r.get('capture_status') or '—'}</dd>
+<dt>Total</dt><dd>${r.get('paypal_total_usd') or '—'} USD</dd>
+<dt>Fee / Net</dt><dd>${r.get('capture_fee_usd') or '—'} / ${r.get('capture_net_usd') or '—'}</dd>
+<dt>Idempotency Key</dt><dd>{r.get('paypal_request_id') or '—'}</dd>
+<dt>Photo binding (custom_id)</dt><dd>{r.get('paypal_custom_id') or '—'}</dd>
+<dt>Invoice ID</dt><dd>{r.get('paypal_invoice_id') or '—'}</dd>
+</dl></div>
+<div style="background:#1e293b;border-radius:8px;padding:1.5rem">
+<h2 style="color:#fbbf24;font-size:0.85rem;letter-spacing:0.1em">AUDIT TRAIL</h2>
+<p style="color:#94a3b8;font-size:0.8rem">Rejected candidates — reasons a procurement auditor can verify</p>
+<dl>
+<dt>Photo SHA-256</dt><dd>{r.get('photo_sha256') or '—'}</dd>
+<dt>Budget</dt><dd>${r.get('budget', 0):.2f}</dd>
+<dt>Sourced Total</dt><dd>${r.get('sourced_total', 0):.2f}</dd>
+{math_html}
+<dt>Fallback Drops ({len(r.get('fallback_drops') or [])})</dt><dd>{drops or '—'}</dd>
+<dt>Rejected Candidates</dt><dd>{rejected or '—'}</dd>
+</dl></div></div>
+<p><a href="/receipt/{r.get('paypal_order_id')}.json">Download audit JSON</a> · <a href="/">← Back</a></p>
+</body></html>"""
+
+
+@app.route("/receipt/<order_id>.json")
+def receipt_json(order_id):
+    if not order_id or "/" in order_id or ".." in order_id:
+        abort(404)
+    path = f"spectocart_receipt_{order_id}.json"
+    if not os.path.exists(path):
+        abort(404)
+    return send_file(path, mimetype="application/json")
+
 @app.route("/orders")
 def orders_page():
     orders = _load_json(ORDERS_FILE, [])
@@ -361,7 +432,7 @@ def orders_page():
                 f"<button type='submit'>Refund (sandbox demo)</button></form>"
             )
         rows += (
-            f"<tr><td>{order.get('order_id')}</td><td>{order.get('project_title', '')}</td><td>{'vaulted' if order.get('vaulted_method') else 'fresh approval'}</td>"
+            f"<tr><td><a href='/receipt/{order.get('order_id')}'>{order.get('order_id')}</a></td><td>{order.get('project_title', '')}</td><td>{'vaulted' if order.get('vaulted_method') else 'fresh approval'}</td>"
             f"<td>${order.get('total_usd', '')}</td><td>{order.get('status')}</td>"
             f"<td>{order.get('capture_id', '')}</td><td>${order.get('fee', '')}</td>"
             f"<td>${order.get('net', '')}</td><td>{refund_btn}</td></tr>"
@@ -397,6 +468,11 @@ def api_create_order():
     cart = _load_json(CART_FILE, None)
     if not cart:
         return jsonify({"error": "No cart. Run /analyze first."}), 400
+    # Server-side policy gate: refuse an over-budget cart even if the
+    # browser button is bypassed. /analyze already stops at this point,
+    # so this only fires on a stale or tampered last_cart.json.
+    if float(cart.get("grand_total", 0)) > float(cart.get("budget", 0)):
+        return jsonify({"error": "POLICY_BREACH", "total": cart.get("grand_total"), "cap": cart.get("budget")}), 409
     order = create_paypal_sandbox_order(cart["items"], cart["project_title"])
     _save_order({
         "order_id": order["order_id"],

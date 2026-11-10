@@ -113,3 +113,9 @@ PayPal AI Hackathon on Devpost, deadline 2026-11-12 21:00 GMT+1. The only fundam
 ## License
 
 MIT — see `LICENSE`.
+
+## Policy gate & reconciliation
+
+- **Server-side policy gate:** `/analyze` stops (HTTP 400, no cart saved) when even Essential-only is over budget. `/api/create-order` re-checks the saved cart and refuses with HTTP 409 (`POLICY_BREACH`) if the total is over the budget, so the gate holds even if the browser button is bypassed.
+- **Order binding (CLI):** the PayPal purchase unit carries `custom_id` = photo SHA-256 prefix and a unique `invoice_id` = `SPECTOCART-<hash>-<8 hex>`, so the order is bound to the source image and retrievable via `GET /v2/checkout/orders/{id}`.
+- **Reconciliation view:** `/receipt/<order_id>` renders PayPal settlement beside the audit trail — photo hash, project math derivation, fallback drops, and every rejected candidate with its `rejected_because` reason. The same JSON is downloadable at `/receipt/<order_id>.json`.

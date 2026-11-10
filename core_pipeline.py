@@ -961,6 +961,8 @@ class Receipt(TypedDict, total=False):
     paypal_total_usd: str
     paypal_approve_url: str
     paypal_request_id: str
+    paypal_custom_id: str
+    paypal_invoice_id: str
     capture_id: str
     capture_status: str
     capture_fee_usd: str
@@ -1023,6 +1025,8 @@ def build_receipt(
         "paypal_total_usd": (paypal_order or {}).get("total_usd", ""),
         "paypal_approve_url": (paypal_order or {}).get("approve_url", ""),
         "paypal_request_id": (paypal_order or {}).get("request_id", ""),
+        "paypal_custom_id": (paypal_order or {}).get("custom_id", ""),
+        "paypal_invoice_id": (paypal_order or {}).get("invoice_id", ""),
         "capture_id": "",
         "capture_status": "",
         "capture_fee_usd": "",
@@ -1067,7 +1071,7 @@ def get_paypal_access_token() -> str:
     return res.json()["access_token"]
 
 
-def create_paypal_sandbox_order(sourced_cart: list[dict], project_title: str) -> dict:
+def create_paypal_sandbox_order(sourced_cart: list[dict], project_title: str, photo_path: str = "") -> dict:
     if not sourced_cart:
         raise ValueError("Cannot create a PayPal order for an empty cart.")
 
@@ -1088,8 +1092,16 @@ def create_paypal_sandbox_order(sourced_cart: list[dict], project_title: str) ->
         })
     total_str = f"{total_cents / 100:.2f}"
 
+    # Bind the PayPal order to the source photo: custom_id carries the
+    # photo SHA-256 prefix; invoice_id is unique per order so PayPal
+    # never rejects a repeat run with the same photo.
+    photo_hash = _photo_sha256(photo_path)[:16] if photo_path else ""
+    invoice_id = f"SPECTOCART-{photo_hash or 'NOIMG'}-{uuid.uuid4().hex[:8]}"[:127]
+
     purchase_unit = {
         "description": f"SpecToCart BOM: {project_title}"[:120],
+        "custom_id": photo_hash,
+        "invoice_id": invoice_id,
         "amount": {
             "currency_code": "USD",
             "value": total_str,
@@ -1140,6 +1152,8 @@ def create_paypal_sandbox_order(sourced_cart: list[dict], project_title: str) ->
         "total_usd": total_str,
         "approve_url": approve_link,
         "request_id": request_id,
+        "custom_id": photo_hash,
+        "invoice_id": invoice_id,
     }
 
 
@@ -1417,7 +1431,7 @@ def _run_pipeline(args) -> int:
         return 0
 
     # PayPal
-    paypal_order = create_paypal_sandbox_order(sourced_cart, bom.project_title)
+    paypal_order = create_paypal_sandbox_order(sourced_cart, bom.project_title, photo_path=test_img)
     receipt = build_receipt(
         photo_path=test_img, project_title=bom.project_title, budget=budget_limit,
         bom_items=[b.model_dump() for b in bom.items],
