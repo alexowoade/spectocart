@@ -382,7 +382,7 @@ def receipt_view(order_id):
 <h1>SpecToCart Reconciliation — {r.get('project_title')}</h1>
 <p style="color:#94a3b8">{r.get('generated_at')}{demo}</p>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
-<div style="background:#1e293b;border-radius:8px;padding:1.5rem">
+<div style="background:#1e293b;color:#e2e8f0;border-radius:8px;padding:1.5rem">
 <h2 style="color:#34d399;font-size:0.85rem;letter-spacing:0.1em">PAYPAL SETTLEMENT</h2>
 <dl>
 <dt>Order ID</dt><dd>{r.get('paypal_order_id') or '—'}</dd>
@@ -395,7 +395,7 @@ def receipt_view(order_id):
 <dt>Photo binding (custom_id)</dt><dd>{r.get('paypal_custom_id') or '—'}</dd>
 <dt>Invoice ID</dt><dd>{r.get('paypal_invoice_id') or '—'}</dd>
 </dl></div>
-<div style="background:#1e293b;border-radius:8px;padding:1.5rem">
+<div style="background:#1e293b;color:#e2e8f0;border-radius:8px;padding:1.5rem">
 <h2 style="color:#fbbf24;font-size:0.85rem;letter-spacing:0.1em">AUDIT TRAIL</h2>
 <p style="color:#94a3b8;font-size:0.8rem">Rejected candidates — reasons a procurement auditor can verify</p>
 <dl>
