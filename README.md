@@ -38,6 +38,8 @@ All transactions below were executed live against `api-m.sandbox.paypal.com` and
 | **Webhook Signature Verification & Refund Resolution** | `REFUNDED` | Order `03L03592KH070850F` • Capture `2C255679WD8268150` • Refund `95100155TW447110E` | Verified `SUCCESS` |
 | **Multi-Domain Generalization: Gallery Wall (`bare_wall.jpg`)** | `$41.47` | Receipt `demo/second_domain_receipt.json` (`$120.00` Budget Cap) | 4 Verified SKUs |
 
+*Paint note: the paint-math engine is deterministic and verified (Judge Quickstart step 3), but a live paint cart is not yet possible — Channel3 returns no painter's tape for the queries tested, so no live paint cart exists. The demo shows the paint math beside the wrap receipt instead of a fake paint cart.*
+
 ---
 
 ## Judge Quickstart — Try It in 2 Minutes (Zero API Keys Required)

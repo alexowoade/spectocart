@@ -15,6 +15,7 @@ from flask import Flask, abort, jsonify, redirect, request, send_file, url_for
 from core_pipeline import (
     FALLBACK_POLICY,
     NoValidOfferError,
+    _photo_sha256,
     _pick_math_item,
     apply_budget_fallback,
     build_receipt,
@@ -830,7 +831,13 @@ def _vault_payment_token(setup_id):
 def _vault_create_and_capture(cart, payment_token_id):
     token = get_paypal_access_token()
     total = f"{float(cart['grand_total']):.2f}"
+    photo_path = cart.get("photo_path", "sample_countertop.jpg")
+    photo_hash = _photo_sha256(photo_path)[:16] if photo_path else ""
+    invoice_id = f"SPECTOCART-{photo_hash or 'NOIMG'}-{_vault_uuid.uuid4().hex[:8]}"[:127]
+    request_id = str(_vault_uuid.uuid4())
     purchase_unit = {"description": f"SpecToCart BOM (vaulted): {cart['project_title']}"[:120],
+                     "custom_id": photo_hash,
+                     "invoice_id": invoice_id,
                      "amount": {"currency_code": "USD", "value": total,
                                 "breakdown": {"item_total": {"currency_code": "USD", "value": total}}}}
     merchant_id = (os.getenv("PAYPAL_MERCHANT_ID") or "").strip()
@@ -871,12 +878,15 @@ def _vault_create_and_capture(cart, payment_token_id):
     res = requests.post(
         "https://api-m.sandbox.paypal.com/v2/checkout/orders",
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}",
-                 "PayPal-Request-Id": str(_vault_uuid.uuid4())},
+                 "PayPal-Request-Id": request_id},
         json=order_payload, timeout=15,
     )
     if res.status_code >= 400:
         return {"order": {}, "captured": None, "error": f"Vaulted order failed {res.status_code}: {res.text[:1000]}"}
     order = res.json()
+    order["_request_id"] = request_id
+    order["_custom_id"] = photo_hash
+    order["_invoice_id"] = invoice_id
     order_id = order.get("id", "")
     order_status = order.get("status", "")
     if order_status == "PAYER_ACTION_REQUIRED":
@@ -993,7 +1003,8 @@ def api_vault_charge():
                      "capture_id": "", "fee": "", "net": "", "vaulted_method": True})
         return f"Vaulted charge failed: {result['error']} <br>Try the normal PayPal button on <a href='/cart'>/cart</a> instead.", 400
     captured = result["captured"]
-    order_id = result["order"].get("id", "")
+    order_obj = result["order"]
+    order_id = order_obj.get("id", "")
     capture = {}
     try:
         capture = captured["purchase_units"][0]["payments"]["captures"][0]
@@ -1002,18 +1013,49 @@ def api_vault_charge():
         net = breakdown.get("net_amount", {}).get("value", "")
     except (KeyError, IndexError, TypeError):
         fee = net = ""
+
+    # Write the reconciliation receipt so clicking this vaulted order
+    # in /orders opens the same certificate as a button checkout.
+    receipt = build_receipt(
+        photo_path=cart.get("photo_path", "sample_countertop.jpg"),
+        project_title=cart["project_title"],
+        budget=float(cart["budget"]),
+        bom_items=cart.get("bom", []),
+        sourced_cart=cart["items"],
+        evaluated_by_item=cart.get("evaluated_by_item", []),
+        fallback_policy=cart.get("fallback_policy", FALLBACK_POLICY),
+        fallback_applied=bool(cart.get("fallback_applied")),
+        fallback_drops=cart.get("fallback_drops", []),
+        sourced_total=float(cart["grand_total"]),
+        project_math=cart.get("project_math", {}),
+        paypal_order={
+            "order_id": order_id,
+            "status": captured.get("status", "COMPLETED"),
+            "total_usd": f"{float(cart['grand_total']):.2f}",
+            "approve_url": "",
+            "request_id": order_obj.get("_request_id", ""),
+            "custom_id": order_obj.get("_custom_id", ""),
+            "invoice_id": order_obj.get("_invoice_id", ""),
+        },
+    )
+    receipt["capture_id"] = capture.get("id", "")
+    receipt["capture_status"] = capture.get("status", "COMPLETED")
+    receipt["capture_fee_usd"] = fee
+    receipt["capture_net_usd"] = net
+    write_receipt(receipt, f"spectocart_receipt_{order_id}.json")
+
     _save_order({"order_id": order_id, "project_title": cart["project_title"],
-                 "total_usd": cart["grand_total"], "status": captured.get("status", "COMPLETED"),
+                 "total_usd": f"{float(cart['grand_total']):.2f}", "status": captured.get("status", "COMPLETED"),
                  "capture_id": capture.get("id", ""), "fee": fee, "net": net,
                  "vaulted_method": True,
-                 "request_id": result["order"].get("id", "")})
+                 "request_id": order_obj.get("_request_id", "")})
     return f"""<!doctype html><html><head><title>Vaulted Charge Completed</title>{PAGE_CSS}</head><body>
 {NAV_HTML}
 <div class="card">
   <span class="badge badge-ok">VAULTED SETTLEMENT COMPLETED</span>
   <h1 style="margin-top:0.5rem">Charged ${cart['grand_total']:.2f} USD Without Browser Re-Approval</h1>
   <p>Order ID: <code>{order_id}</code> &bull; Capture ID: <code>{capture.get('id', '')}</code> &bull; Fee: ${fee} &bull; Net: ${net}</p>
-  <p><a class="btn" href="/orders">View in Orders Ledger &rarr;</a></p>
+  <p><a class="btn" href="/receipt/{order_id}">Open CFO Reconciliation Certificate &rarr;</a> &nbsp; <a class="btn-secondary" href="/orders">View in Orders Ledger &rarr;</a></p>
 </div></body></html>"""
 
 
