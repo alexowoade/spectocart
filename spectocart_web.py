@@ -621,16 +621,17 @@ const gridOptions = {{
   pinnedBottomRowData: pinnedRows,
   getRowStyle: p => (p.data && p.data.critic_reject) ? {{ background: "rgba(239,68,68,0.20)" }} : null,
   columnDefs: [
-    {{ field: "bom_item", headerName: "BOM Spec", flex: 1.3 }},
+    {{ field: "bom_item", headerName: "BOM Spec", flex: 1.3, tooltipField: "bom_item" }},
     {{ field: "priority", headerName: "Tier", width: 100, cellRenderer: p => p.value === "Essential" ? "<span class='badge badge-essential'>Essential</span>" : (p.value === "Optional" ? "<span class='badge badge-optional'>Optional</span>" : "") }},
-    {{ field: "sourced_title", headerName: "Channel3 Winner", flex: 1.5 }},
-    {{ field: "merchant", headerName: "Merchant", width: 110 }},
+    {{ field: "sourced_title", headerName: "Channel3 Winner", flex: 1.5, tooltipField: "sourced_title" }},
+    {{ field: "merchant", headerName: "Merchant", width: 110, tooltipField: "merchant" }},
     {{ field: "quantity", headerName: "Qty", width: 70 }},
     {{ field: "line_total", headerName: "Total", width: 85, valueFormatter: p => "$" + Number(p.value).toFixed(2) }},
-    {{ field: "relevance", headerName: "Match Score", flex: 1.1 }},
+    {{ field: "relevance", headerName: "Match Score", flex: 1.1, tooltipField: "relevance" }},
     {{ field: "critic_verdict", headerName: "Critic verdict", width: 150, cellRenderer: criticVerdictRenderer }}
   ],
-  defaultColDef: {{ sortable: true, resizable: true, filter: true }}
+  defaultColDef: {{ sortable: true, resizable: true, filter: true }},
+  tooltipShowDelay: 500
 }};
 if (window.agGrid) {{
   window.gridApi = agGrid.createGrid(document.querySelector('#agCartGrid'), gridOptions);
