@@ -506,6 +506,8 @@ def cart():
             "relevance": f"Score {row['relevance_score']} ({', '.join(row['matched_words'])})",
             "win_reason": row.get("win_reason", ""),
             "critic_reject": bool(critic and critic.get("plausible") is False),
+            "critic_verdict": ("\u2717 REJECT" if critic and critic.get("plausible") is False else ("\u2713 pass" if critic and critic.get("plausible") is True else "\u2014")),
+            "critic_reason": critic.get("reason", "") if critic else "",
         })
 
     vault = _load_json(VAULT_FILE, None)
@@ -552,6 +554,8 @@ def cart():
         "relevance": "",
         "win_reason": "",
         "critic_reject": False,
+        "critic_verdict": "",
+        "critic_reason": "",
     }])
     return f"""<!doctype html><html><head><title>SpecToCart — Spend Control & Cart</title>{PAGE_CSS}</head><body>
 {NAV_HTML}
@@ -595,6 +599,21 @@ def cart():
 {steps_html}
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
 <script>
+const criticVerdictRenderer = p => {{
+  const el = document.createElement("span");
+  if (p.value === "\u2717 REJECT") {{
+    el.textContent = "\u2717 REJECT";
+    el.style.cssText = "color:#fca5a5;font-weight:700;font-size:12px";
+  }} else if (p.value === "\u2713 pass") {{
+    el.textContent = "\u2713 pass";
+    el.style.cssText = "color:#34d399;font-size:12px";
+  }} else {{
+    el.textContent = "\u2014";
+    el.style.cssText = "color:#64748b;font-size:12px";
+  }}
+  if (p.data && p.data.critic_reason) {{ el.title = p.data.critic_reason; }}
+  return el;
+}};
 const rowData = {ag_json};
 const pinnedRows = {pinned_json};
 const gridOptions = {{
@@ -608,7 +627,8 @@ const gridOptions = {{
     {{ field: "merchant", headerName: "Merchant", width: 110 }},
     {{ field: "quantity", headerName: "Qty", width: 65 }},
     {{ field: "line_total", headerName: "Total", width: 85, valueFormatter: p => "$" + Number(p.value).toFixed(2) }},
-    {{ field: "relevance", headerName: "Match Score", flex: 1.1 }}
+    {{ field: "relevance", headerName: "Match Score", flex: 1.1 }},
+    {{ field: "critic_verdict", headerName: "Critic verdict", width: 120, cellRenderer: criticVerdictRenderer }}
   ],
   defaultColDef: {{ sortable: true, resizable: true, filter: true }}
 }};
