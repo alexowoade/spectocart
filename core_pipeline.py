@@ -936,6 +936,7 @@ def critic_check(item_name: str, sourced_title: str, merchant: str, unit_price: 
                 ),
             ),
             label="critic",
+            attempts=1,
         )
         if not response.text:
             return None
