@@ -80,7 +80,7 @@ PAGE_CSS = """
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/styles/ag-grid.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/styles/ag-theme-quartz.css">
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/dist/ag-grid-community.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/ag-studio@3.1.0/dist/ag-studio.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ag-studio@3.1.0/dist/umd/ag-studio.min.js"></script>
 <style>
 :root {
   --bg: #0b1120; --card: #111827; --card-alt: #1e293b; --border: #334155;
