@@ -690,12 +690,42 @@ paypal.Buttons({{
       window.agStudio.AgStudioLicenseManager.setLicenseKey(key);
     }}
   }} catch (e) {{ /* trial mode is fine for learning */ }}
+  // Restore a dashboard layout saved in this browser, if there is one.
+  // The layout is plain JSON: widgets, columns, widths and filters.
+  var savedState = null;
   try {{
-    window.agStudio.createStudio(canvas, {{
+    var raw = localStorage.getItem('spectocartStudioState');
+    if (raw) {{ savedState = JSON.parse(raw); }}
+  }} catch (e) {{ savedState = null; }}
+  // Save the layout to this browser whenever it really changes.
+  // 'durable' means a layout/content change; view-only changes such as
+  // panel sizes do not trigger a save.
+  function saveStudioState(event) {{
+    try {{
+      if (event && event.durable && event.state) {{
+        localStorage.setItem('spectocartStudioState', JSON.stringify(event.state));
+      }}
+    }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
+  }}
+  function startStudio(initialState) {{
+    var options = {{
       data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
-      mode: 'edit'
-    }});
-  }} catch (e) {{ /* Studio failed to start; the grid above still works */ }}
+      mode: 'edit',
+      onStateUpdated: saveStudioState
+    }};
+    if (initialState) {{ options.initialState = initialState; }}
+    return window.agStudio.createStudio(canvas, options);
+  }}
+  var studioApi = null;
+  try {{
+    studioApi = startStudio(savedState);
+  }} catch (e) {{
+    // The saved layout did not fit this data (for example it was saved
+    // against a different field set). Drop it and start blank.
+    try {{ localStorage.removeItem('spectocartStudioState'); }} catch (e2) {{}}
+    try {{ studioApi = startStudio(null); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
+  }}
+  if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
 }})();
 </script>
 </body></html>"""
