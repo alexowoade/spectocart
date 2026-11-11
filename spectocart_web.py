@@ -80,6 +80,7 @@ PAGE_CSS = """
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/styles/ag-grid.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/styles/ag-theme-quartz.css">
 <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.3.2/dist/ag-grid-community.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ag-studio@3.1.0/dist/ag-studio.min.js"></script>
 <style>
 :root {
   --bg: #0b1120; --card: #111827; --card-alt: #1e293b; --border: #334155;
@@ -543,6 +544,7 @@ def cart():
             f"{steps_rows}</table></div>"
         )
     ag_json = json.dumps(ag_rows)
+    studio_key_json = json.dumps(os.getenv("AG_STUDIO_LICENSE_KEY", "").strip())
     pinned_json = json.dumps([{
         "bom_item": "TOTAL",
         "priority": "",
@@ -573,7 +575,7 @@ def cart():
       <h2 style="margin:0">Verified Procurement Manifest (AG Grid + Audit Table)</h2>
       <span style="display:flex;gap:0.5rem;align-items:center"><span class="badge badge-essential">Channel3 Graph Verified</span><button type="button" onclick="exportCartCsv()" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:0.35rem 0.7rem;cursor:pointer;font-size:0.8rem">Export CSV</button></span>
     </div>
-    <div id="agCartGrid" class="ag-theme-quartz-dark" style="height:230px;width:100%;margin-bottom:1rem"></div>
+    <div id="agCartGrid" class="ag-theme-quartz-dark" style="height:320px;width:100%;margin-bottom:1rem"></div>
     <table>
       <tr><th>BOM Spec</th><th>Selected Channel3 SKU &amp; Rejection Audit</th><th>Unit</th><th>Line Total</th><th>Relevance Proof</th></tr>
       {rows}
@@ -595,6 +597,11 @@ def cart():
     <div id="result" style="margin-top:0.85rem;font-size:0.88rem"></div>
     {vault_html}
   </div>
+</div>
+<div class="card" style="margin-top:1.5rem">
+  <h2 style="margin:0 0 0.5rem">Interactive CFO Audit Studio (AG Studio)</h2>
+  <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.75rem">Same verified cart data, as a live dashboard you can build on. Switch to Edit mode in the Studio toolbar to drag, resize and add charts — or View mode to present it. Without a licence key it runs in trial mode with a watermark.</p>
+  <div id="agStudioCanvas" style="height:520px;width:100%"></div>
 </div>
 {steps_html}
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
@@ -669,6 +676,27 @@ paypal.Buttons({{
     document.getElementById('result').textContent = 'PayPal error: ' + err;
   }}
 }}).render('#paypal-button-container');
+
+// AG Studio: interactive dashboard over the same verified cart data.
+// Trial mode (watermark) without a key; set AG_STUDIO_LICENSE_KEY in
+// .env to remove it. Guarded: if Studio fails to load or start, the
+// grid and PayPal panel above still work.
+(function() {{
+  var canvas = document.getElementById('agStudioCanvas');
+  if (!canvas || !window.agStudio || typeof window.agStudio.createStudio !== 'function') {{ return; }}
+  var key = {studio_key_json};
+  try {{
+    if (key && window.agStudio.AgStudioLicenseManager && typeof window.agStudio.AgStudioLicenseManager.setLicenseKey === 'function') {{
+      window.agStudio.AgStudioLicenseManager.setLicenseKey(key);
+    }}
+  }} catch (e) {{ /* trial mode is fine for learning */ }}
+  try {{
+    window.agStudio.createStudio(canvas, {{
+      data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
+      mode: 'edit'
+    }});
+  }} catch (e) {{ /* Studio failed to start; the grid above still works */ }}
+}})();
 </script>
 </body></html>"""
 
