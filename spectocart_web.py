@@ -505,6 +505,7 @@ def cart():
             "line_total": row["line_total"],
             "relevance": f"Score {row['relevance_score']} ({', '.join(row['matched_words'])})",
             "win_reason": row.get("win_reason", ""),
+            "critic_reject": bool(critic and critic.get("plausible") is False),
         })
 
     vault = _load_json(VAULT_FILE, None)
@@ -540,6 +541,18 @@ def cart():
             f"{steps_rows}</table></div>"
         )
     ag_json = json.dumps(ag_rows)
+    pinned_json = json.dumps([{
+        "bom_item": "TOTAL",
+        "priority": "",
+        "sourced_title": f"{len(cart['items'])} verified SKUs",
+        "merchant": "",
+        "quantity": "",
+        "unit_price": "",
+        "line_total": cart["grand_total"],
+        "relevance": "",
+        "win_reason": "",
+        "critic_reject": False,
+    }])
     return f"""<!doctype html><html><head><title>SpecToCart — Spend Control & Cart</title>{PAGE_CSS}</head><body>
 {NAV_HTML}
 <h1>{cart['project_title']}</h1>
@@ -554,7 +567,7 @@ def cart():
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
       <h2 style="margin:0">Verified Procurement Manifest (AG Grid + Audit Table)</h2>
-      <span class="badge badge-essential">Channel3 Graph Verified</span>
+      <span style="display:flex;gap:0.5rem;align-items:center"><span class="badge badge-essential">Channel3 Graph Verified</span><button type="button" onclick="exportCartCsv()" style="background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:0.35rem 0.7rem;cursor:pointer;font-size:0.8rem">Export CSV</button></span>
     </div>
     <div id="agCartGrid" class="ag-theme-quartz-dark" style="height:230px;width:100%;margin-bottom:1rem"></div>
     <table>
@@ -583,21 +596,27 @@ def cart():
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
 <script>
 const rowData = {ag_json};
+const pinnedRows = {pinned_json};
 const gridOptions = {{
   rowData: rowData,
+  pinnedBottomRowData: pinnedRows,
+  getRowStyle: p => (p.data && p.data.critic_reject) ? {{ background: "rgba(239,68,68,0.20)" }} : null,
   columnDefs: [
     {{ field: "bom_item", headerName: "BOM Spec", flex: 1.3 }},
-    {{ field: "priority", headerName: "Tier", width: 95 }},
+    {{ field: "priority", headerName: "Tier", width: 95, cellRenderer: p => p.value === "Essential" ? "<span class='badge badge-essential'>Essential</span>" : (p.value === "Optional" ? "<span class='badge badge-optional'>Optional</span>" : "") }},
     {{ field: "sourced_title", headerName: "Channel3 Winner", flex: 1.5 }},
     {{ field: "merchant", headerName: "Merchant", width: 110 }},
     {{ field: "quantity", headerName: "Qty", width: 65 }},
     {{ field: "line_total", headerName: "Total", width: 85, valueFormatter: p => "$" + Number(p.value).toFixed(2) }},
     {{ field: "relevance", headerName: "Match Score", flex: 1.1 }}
   ],
-  defaultColDef: {{ sortable: true, resizable: true }}
+  defaultColDef: {{ sortable: true, resizable: true, filter: true }}
 }};
 if (window.agGrid) {{
-  agGrid.createGrid(document.querySelector('#agCartGrid'), gridOptions);
+  window.gridApi = agGrid.createGrid(document.querySelector('#agCartGrid'), gridOptions);
+}}
+function exportCartCsv() {{
+  if (window.gridApi) {{ window.gridApi.exportDataAsCsv({{ fileName: "spectocart-cart.csv" }}); }}
 }}
 function toggleGate(checked) {{
   const el = document.getElementById('paypal-button-container');
