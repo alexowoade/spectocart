@@ -567,7 +567,7 @@ def cart():
   <div class="kpi"><div class="kpi-label">Policy Gate Status</div><div class="kpi-val" style="color:#34d399;font-size:1.05rem">UNLOCKED &bull; READY</div></div>
 </div>
 {banner_html}
-<div class="grid-2">
+<div class="grid-2" style="grid-template-columns:1fr">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
       <h2 style="margin:0">Verified Procurement Manifest (AG Grid + Audit Table)</h2>
