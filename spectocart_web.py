@@ -601,7 +601,12 @@ def cart():
 <div class="card" style="margin-top:1.5rem">
   <h2 style="margin:0 0 0.5rem">Interactive CFO Audit Studio (AG Studio)</h2>
   <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.75rem">Same verified cart data, as a live dashboard you can build on. Switch to Edit mode in the Studio toolbar to drag, resize and add charts — or View mode to present it. Without a licence key it runs in trial mode with a watermark.</p>
-  <div id="agStudioCanvas" style="height:520px;width:100%"></div>
+  <div style="margin:0 0 0.75rem;display:flex;gap:0.5rem;align-items:center">
+  <span style="color:var(--muted);font-size:0.85rem">Mode:</span>
+  <button type="button" id="studioModeEdit" style="padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">Edit</button>
+  <button type="button" id="studioModeView" style="padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">View</button>
+</div>
+<div id="agStudioCanvas" style="height:520px;width:100%"></div>
 </div>
 {steps_html}
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
@@ -726,6 +731,16 @@ paypal.Buttons({{
     try {{ studioApi = startStudio(null); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
+  // Edit / View buttons: Studio shows no mode switch of its own.
+  function setStudioMode(mode) {{
+    if (window.spectocartStudioApi && typeof window.spectocartStudioApi.setProperty === 'function') {{
+      try {{ window.spectocartStudioApi.setProperty('mode', mode); }} catch (e) {{}}
+    }}
+  }}
+  var editBtn = document.getElementById('studioModeEdit');
+  var viewBtn = document.getElementById('studioModeView');
+  if (editBtn) {{ editBtn.addEventListener('click', function() {{ setStudioMode('edit'); }}); }}
+  if (viewBtn) {{ viewBtn.addEventListener('click', function() {{ setStudioMode('view'); }}); }}
 }})();
 </script>
 </body></html>"""
