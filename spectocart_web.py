@@ -5,6 +5,7 @@ Compatible with core_pipeline.py (Patch 8 v6) and all 35 unit tests.
 
 import json
 import os
+import time
 from dataclasses import asdict
 from datetime import datetime, timezone
 import uuid as _vault_uuid
@@ -311,8 +312,37 @@ def cart_rebudget():
     return redirect(url_for("cart"))
 
 
+# Rate limit for live /analyze (protects the Gemini + Channel3 keys).
+RATE_LIMIT_MAX = 5            # live analyses per IP
+RATE_LIMIT_WINDOW = 3600      # per hour (seconds)
+_RATE_LIMIT_STORE: dict[str, list[float]] = {}
+
+
+def _analyze_rate_limited() -> bool:
+    """True if this client IP has used up its live analyses this hour."""
+    ip = (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip() or "unknown"
+    now = time.time()
+    stamps = [t for t in _RATE_LIMIT_STORE.get(ip, []) if now - t < RATE_LIMIT_WINDOW]
+    if len(stamps) >= RATE_LIMIT_MAX:
+        _RATE_LIMIT_STORE[ip] = stamps
+        return True
+    stamps.append(now)
+    _RATE_LIMIT_STORE[ip] = stamps
+    return False
+
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
+    if _analyze_rate_limited():
+        return (
+            "<h1>Too many live analyses</h1>"
+            "<p>This demo allows 5 live photo analyses per hour per visitor, "
+            "to protect the AI quota. Please try again in a little while.</p>"
+            "<p>The saved $49.79 Quick-Load demo is always available on the "
+            "home page and uses no live AI quota.</p>"
+            "<p><a href='/'>Back to the demo</a></p>",
+            429,
+        )
     budget = float(request.form.get("budget") or 150)
     goal = request.form.get("goal") or ""
     length_raw = request.form.get("length")
