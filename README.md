@@ -31,14 +31,41 @@ All transactions below were executed live against `api-m.sandbox.paypal.com` and
 
 | Workflow / Verification Milestone | Total (USD) | PayPal Order / Capture / Proof ID | Fee / Merchant Net |
 | :--- | :--- | :--- | :--- |
+| **Countertop Resurfacing — Latest Live Receipt (Real Photo, New Hash)** | `$49.79` | Order `8UN995783B682050F` • Capture `30S27476H6408474T` • Refund `1A935578A72038619` COMPLETED • Photo SHA-256 `8feb37e72bf2407d2ac5589b0bdb3069579acbe1d05b05218a7f56f36c201602` • `custom_id` `8feb37e72bf2407d` | Fee `$2.23` • Net `$47.56` |
 | **Countertop Resurfacing (Patch 8 v6 + Project Math + Critic)** | `$49.79` | Order `1GU80970KT059953X` • Capture `4ET24157KE976933Y` | Fee `$2.23` • Net `$47.56` |
+| **Countertop Resurfacing — Second Live Charge & Refund** | `$49.79` | Order `8GE51068HG9912157` • Capture `4PX709022Y0303019` • Refund `8VG19252XT308730Y` COMPLETED | Fee `$2.23` • Net `$47.56` |
+| **PayPal Vault v3 — ACTIVE Token (Buyer-Not-Present)** | `ACTIVE` | Billing Token `BA-0DC55606G6021210D` • Stored server-side in `vault_tokens.json` • `/vault` reads "Vault Status ACTIVE" | 1-click subsequent charges, no pop-up |
 | **Spend Policy Auto-Trim (`$48.00` Cap Enforcement)** | `$49.79 → $45.54` | Receipt `demo/demo_fallback_receipt.json` (Dropped Optional Degreaser `$4.25`) | Saved `$4.25` under cap |
 | **Web App PayPal JS SDK Server-Side Checkout** | `$54.16` | Capture `8YN70180712304914` | Fee `$2.38` • Net `$51.78` |
 | **PayPal Vault v3 Subsequent Charge (Buyer-Not-Present)** | `$35.61` | Order `9DA556555C6203348` • Capture `9U6516399J173801E` | Fee `$1.73` • Net `$33.88` |
-| **Webhook Signature Verification & Refund Resolution** | `REFUNDED` | Order `03L03592KH070850F` • Capture `2C255679WD8268150` • Refund `95100155TW447110E` | Verified `SUCCESS` |
+| **Webhook Signature Verification & Refund Resolution** | `REFUNDED` | Webhook `3UC10692DL797192K` • Three `SUCCESS` events (`WH-65F902683C049805H` REFUNDED, `WH-46N78239M70930306` COMPLETED, `WH-6UJ79692P46407937` REFUNDED) • Two COMPLETED refunds (`8VG19252XT308730Y`, `1A935578A72038619`) | Verified `SUCCESS` |
 | **Multi-Domain Generalization: Gallery Wall (`bare_wall.jpg`)** | `$41.47` | Receipt `demo/second_domain_receipt.json` (`$120.00` Budget Cap) | 4 Verified SKUs |
 
 *Paint note: the paint-math engine is deterministic and verified (Judge Quickstart step 3), but a live paint cart is not yet possible — Channel3 returns no painter's tape for the queries tested, so no live paint cart exists. The demo shows the paint math beside the wrap receipt instead of a fake paint cart.*
+
+*Photo note: the live demo now uses a real photograph of a worn laminate countertop (large dark stains, chipped front edge exposing particleboard) instead of the original diagram. The receipt above binds that photo's SHA-256 (`8feb37e7...`). The demo video v6 opens with the real photo.*
+
+---
+
+## AG Grid — Cart Manifest & CFO Audit Studio
+
+SpecToCart uses AG Grid for the procurement manifest and AG Studio 3.1.0 for the CFO audit dashboard. Both are live on the demo and fed by the same verified cart.
+
+**Main cart grid (`/cart`)**
+- 4 sourced SKUs plus a pinned TOTAL row (Qty 5, $49.79).
+- Critic column: every item carries a `critic_verdict`; Silicone Sealant is logged `REJECT` (verdicts are logged, not enforced, unless `--strict-critic` is used).
+- Channel3 Rejection Audit Drawers: expand any item to see why losing candidates were rejected.
+- Toggle the budget cap live between $150 and $48; the Spend Policy Gate re-trims the cart and the TOTAL row follows.
+- Settle via PayPal JS SDK or 1-Click PayPal Vault v3.
+
+**AG Studio dashboard (`/cart`, below the grid)**
+- KPI "Verified Cart Total" ($49.79) on top of a data table and a vertical column chart below.
+- Table columns: `bom_item`, `quantity`, `unit_price`, `line_total`, `critic_verdict` (`sourced_title` removed so every column fits).
+- Total Row: quantity and line_total use `aggregation: 'sum'`, so the total follows the filter.
+- Cross-filter both ways: click a chart bar (for example Marble Roll) to filter the table to that item and the KPI to $33.56; click a table row to highlight the chart.
+- Drill Through: right-click a chart segment to drill into its rows, then Back to restore the summary.
+- Grid filter dropdown on the table, and the Studio layout auto-saves and restores (localStorage `spectocartStudioStateV9`).
+- Built in Edit mode and presented in View mode; the Filters panel stays open on the right even in View mode.
 
 ---
 
@@ -78,10 +105,10 @@ python3 spectocart_web.py
 # Open http://127.0.0.1:5000
 ```
 
-  - Visual Spec & Instant Demo Load (`/`): Upload any project photo with surface dimensions, or use the Instant Judge Quick-Load buttons to immediately test the $150 compliant cart ($49.79) and $48 tight-budget policy fallback ($45.54).
-  - Spend Gate & AG Grid Cart (`/cart`): Inspect matched Channel3 SKUs, expand the Channel3 Rejection Audit Drawers, toggle between $150 and $48 policy caps live, and settle via PayPal JS SDK or 1-Click PayPal Vault v3.
-  - Interactive CFO Audit Studio (`/cart`, below the grid): The same verified manifest feeds an AG Studio 3.1.0 dashboard — a data table of every item with its line total and a spend-breakdown column chart by BOM item, built in Edit mode and presented in View mode, with the layout auto-saved and restored.
-  - Reconciliation Certificates (`/orders` & `/receipt/<order_id>`): View side-by-side PayPal Settlement Proof (order_id, capture_id, fee, net, custom_id photo hash, invoice_id) and the Zero-Hallucination Audit Trail.
+- Visual Spec & Instant Demo Load (`/`): Upload any project photo with surface dimensions, or use the Instant Judge Quick-Load buttons to immediately test the $150 compliant cart ($49.79) and $48 tight-budget policy fallback ($45.54).
+- Spend Gate & AG Grid Cart (`/cart`): Inspect matched Channel3 SKUs, expand the Channel3 Rejection Audit Drawers, toggle between $150 and $48 policy caps live, and settle via PayPal JS SDK or 1-Click PayPal Vault v3.
+- Interactive CFO Audit Studio (`/cart`, below the grid): The same verified manifest feeds an AG Studio 3.1.0 dashboard — a data table of every item with its line total and a spend-breakdown column chart by BOM item, built in Edit mode and presented in View mode, with the layout auto-saved and restored.
+- Reconciliation Certificates (`/orders` & `/receipt/<order_id>`): View side-by-side PayPal Settlement Proof (order_id, capture_id, fee, net, custom_id photo hash, invoice_id) and the Zero-Hallucination Audit Trail.
 - Run the Full CLI Depth Pipeline (`core_pipeline.py`):
 
 ```bash
