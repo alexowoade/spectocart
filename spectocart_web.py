@@ -622,13 +622,13 @@ const gridOptions = {{
   getRowStyle: p => (p.data && p.data.critic_reject) ? {{ background: "rgba(239,68,68,0.20)" }} : null,
   columnDefs: [
     {{ field: "bom_item", headerName: "BOM Spec", flex: 1.3 }},
-    {{ field: "priority", headerName: "Tier", width: 85, cellRenderer: p => p.value === "Essential" ? "<span class='badge badge-essential'>Essential</span>" : (p.value === "Optional" ? "<span class='badge badge-optional'>Optional</span>" : "") }},
+    {{ field: "priority", headerName: "Tier", width: 100, cellRenderer: p => p.value === "Essential" ? "<span class='badge badge-essential'>Essential</span>" : (p.value === "Optional" ? "<span class='badge badge-optional'>Optional</span>" : "") }},
     {{ field: "sourced_title", headerName: "Channel3 Winner", flex: 1.5 }},
-    {{ field: "merchant", headerName: "Merchant", width: 90 }},
-    {{ field: "quantity", headerName: "Qty", width: 55 }},
-    {{ field: "line_total", headerName: "Total", width: 75, valueFormatter: p => "$" + Number(p.value).toFixed(2) }},
+    {{ field: "merchant", headerName: "Merchant", width: 110 }},
+    {{ field: "quantity", headerName: "Qty", width: 70 }},
+    {{ field: "line_total", headerName: "Total", width: 85, valueFormatter: p => "$" + Number(p.value).toFixed(2) }},
     {{ field: "relevance", headerName: "Match Score", flex: 1.1 }},
-    {{ field: "critic_verdict", headerName: "Critic verdict", width: 110, cellRenderer: criticVerdictRenderer }}
+    {{ field: "critic_verdict", headerName: "Critic verdict", width: 150, cellRenderer: criticVerdictRenderer }}
   ],
   defaultColDef: {{ sortable: true, resizable: true, filter: true }}
 }};
