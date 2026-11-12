@@ -69,6 +69,7 @@ venv/bin/python core_pipeline.py demo-paint-math --perimeter 48 --height 9 --coa
   - `CHANNEL3_API_KEY` (Live product search against https://api.trychannel3.com/v1/search)
   - `PAYPAL_CLIENT_ID` & `PAYPAL_CLIENT_SECRET` (PayPal Sandbox Business credentials)
   - Optional: `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID`
+  - Optional: `AG_STUDIO_LICENSE_KEY` (AG Studio trial licence — removes the trial watermark from the Studio canvas)
 - Launch the Web Application (`spectocart_web.py`):
 
 ```bash
@@ -79,6 +80,7 @@ python3 spectocart_web.py
 
   - Visual Spec & Instant Demo Load (`/`): Upload any project photo with surface dimensions, or use the Instant Judge Quick-Load buttons to immediately test the $150 compliant cart ($49.79) and $48 tight-budget policy fallback ($45.54).
   - Spend Gate & AG Grid Cart (`/cart`): Inspect matched Channel3 SKUs, expand the Channel3 Rejection Audit Drawers, toggle between $150 and $48 policy caps live, and settle via PayPal JS SDK or 1-Click PayPal Vault v3.
+  - Interactive CFO Audit Studio (`/cart`, below the grid): The same verified manifest feeds an AG Studio 3.1.0 dashboard — a data table of every item with its line total and a spend-breakdown column chart by BOM item, built in Edit mode and presented in View mode, with the layout auto-saved and restored.
   - Reconciliation Certificates (`/orders` & `/receipt/<order_id>`): View side-by-side PayPal Settlement Proof (order_id, capture_id, fee, net, custom_id photo hash, invoice_id) and the Zero-Hallucination Audit Trail.
 - Run the Full CLI Depth Pipeline (`core_pipeline.py`):
 
