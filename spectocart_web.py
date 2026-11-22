@@ -761,7 +761,7 @@ paypal.Buttons({{
   // The layout is plain JSON: widgets, columns, widths and filters.
   var savedState = null;
   try {{
-    var raw = localStorage.getItem('spectocartStudioStateV6');
+    var raw = localStorage.getItem('spectocartStudioStateV7');
     if (raw) {{ savedState = JSON.parse(raw); }}
   }} catch (e) {{ savedState = null; }}
   // Save the layout to this browser whenever it really changes.
@@ -770,7 +770,7 @@ paypal.Buttons({{
   function saveStudioState(event) {{
     try {{
       if (event && event.durable && event.state) {{
-        localStorage.setItem('spectocartStudioStateV6', JSON.stringify(event.state));
+        localStorage.setItem('spectocartStudioStateV7', JSON.stringify(event.state));
       }}
     }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
   }}
@@ -785,14 +785,15 @@ paypal.Buttons({{
         'kpi-cart-total': {{
           type: 'value',
           dataMapping: {{ value: [{{ id: 'cart.line_total', aggregation: 'sum' }}] }},
-          format: {{ style: {{ label: {{ enabled: true, text: 'Verified Cart Total' }} }} }}
+          format: {{ style: {{ label: {{ enabled: true, text: 'Verified Cart Total' }} }}, crossFilter: 'filter' }}
         }},
         'spend-by-item': {{
           type: 'column-chart-grouped',
           dataMapping: {{
             categoryKey: [{{ id: 'cart.bom_item' }}],
             valueKey: [{{ id: 'cart.line_total', aggregation: 'sum' }}]
-          }}
+          }},
+          format: {{ crossFilter: 'filter' }}
         }},
         'cart-table': {{
           type: 'grid',
@@ -809,7 +810,8 @@ paypal.Buttons({{
             style: {{
               theme: {{ rowHeight: 24 }},
               grandTotalRow: {{ enabled: true }}
-            }}
+            }},
+            crossFilter: 'filter'
           }}
         }}
       }},
@@ -837,7 +839,7 @@ paypal.Buttons({{
   }} catch (e) {{
     // The saved layout did not fit this data (for example it was saved
     // against a different field set). Drop it and start with the default dashboard.
-    try {{ localStorage.removeItem('spectocartStudioStateV6'); }} catch (e2) {{}}
+    try {{ localStorage.removeItem('spectocartStudioStateV7'); }} catch (e2) {{}}
     try {{ studioApi = startStudio(defaultDashboardState); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
