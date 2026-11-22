@@ -820,7 +820,8 @@ paypal.Buttons({{
     var options = {{
       data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
       mode: 'edit',
-      onStateUpdated: saveStudioState
+      onStateUpdated: saveStudioState,
+      getContextMenuItems: getStudioContextMenuItems
     }};
     if (initialState) {{ options.initialState = initialState; }}
     return window.agStudio.createStudio(canvas, options);
@@ -848,7 +849,7 @@ paypal.Buttons({{
       var c = conditions[i];
       if (c && c.field) {{
         var fieldId = (typeof c.field === 'object' && c.field.id) ? c.field.id : c.field;
-        if (fieldId === 'bom_item') {{ bomItem = c.value; break; }}
+        if (fieldId === 'cart.bom_item' || fieldId === 'bom_item') {{ bomItem = c.value; break; }}
       }}
     }}
     if (bomItem == null) {{ return []; }}
@@ -875,11 +876,6 @@ paypal.Buttons({{
     var backBtn = document.getElementById('studio-back-btn');
     if (backBtn) {{ backBtn.style.display = 'none'; }}
   }}
-  try {{
-    if (studioApi && typeof studioApi.setProperty === 'function') {{
-      studioApi.setProperty('getContextMenuItems', getStudioContextMenuItems);
-    }}
-  }} catch (e) {{ /* context menu unavailable; Studio still works */ }}
   var studioBackBtn = document.getElementById('studio-back-btn');
   if (studioBackBtn) {{ studioBackBtn.addEventListener('click', goBackFromDrillThrough); }}
   // Edit / View buttons: Studio shows no mode switch of its own.
