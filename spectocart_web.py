@@ -922,26 +922,19 @@ paypal.Buttons({{
         aiDescription: 'BOM item to group candidates by.'
       }}
     }},
-    formatShape: function(s) {{
-      return s.object({{
-        caption: s.string({{ description: 'Widget caption' }}).optional(),
-        triggerCrossFilter: s.boolean({{ description: 'Click row to cross-filter' }}).optional()
-      }});
-    }},
-    ai: {{
-      description: 'Displays the rejection audit trail for each BOM item — every Channel3 candidate considered, with its rejection reason.'
-    }},
     comp: RejectionTrailComponent,
     defaultSize: {{ width: 600, height: 400 }},
     minSize: {{ width: 400, height: 200 }}
   }};
   try {{
     if (window.agStudio && typeof window.agStudio.createWidgets === 'function' && studioApi && typeof studioApi.setProperty === 'function') {{
-      var rejectionTrailWidgets = window.agStudio.createWidgets({{
-        additionalTypes: [rejectionTrailWidgetDefinition],
-        menu: [{{ label: 'Custom', widgetIds: ['rejection-trail'] }}]
+      studioApi.setProperty('widgets', function(widgetConfig) {{
+        var baseMenu = (widgetConfig && widgetConfig.menu) ? widgetConfig.menu : [];
+        return window.agStudio.createWidgets({{
+          additionalTypes: [rejectionTrailWidgetDefinition],
+          menu: baseMenu.concat([{{ label: 'Custom', widgetIds: ['rejection-trail'] }}])
+        }});
       }});
-      studioApi.setProperty('widgets', rejectionTrailWidgets);
     }}
   }} catch (e) {{ /* custom widget unavailable; Studio still works without it */ }}
   // Edit / View buttons: Studio shows no mode switch of its own.
