@@ -774,72 +774,6 @@ paypal.Buttons({{
       }}
     }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
   }}
-  function startStudio(initialState) {{
-    var options = {{
-      data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
-      mode: 'edit',
-      onStateUpdated: saveStudioState
-    }};
-    if (initialState) {{ options.initialState = initialState; }}
-    return window.agStudio.createStudio(canvas, options);
-  }}
-  var studioApi = null;
-  try {{
-    studioApi = startStudio(savedState);
-  }} catch (e) {{
-    // The saved layout did not fit this data (for example it was saved
-    // against a different field set). Drop it and start blank.
-    try {{ localStorage.removeItem('spectocartStudioState'); }} catch (e2) {{}}
-    try {{ studioApi = startStudio(null); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
-  }}
-  if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
-  // Drill Through: right-click a Studio row or chart bar to open a detail
-  // report filtered to that BOM item. Saves the summary state so
-  // "Back to summary" can restore it. Guarded so a Studio failure
-  // never breaks the grid or PayPal panel above.
-  function getStudioContextMenuItems(params) {{
-    if (!params || params.filter == null) {{ return []; }}
-    var filter = params.filter;
-    var conditions = (filter.operator === 'AND' && filter.conditions) ? filter.conditions : [filter];
-    var bomItem = null;
-    for (var i = 0; i < conditions.length; i++) {{
-      var c = conditions[i];
-      if (c && c.field) {{
-        var fieldId = (typeof c.field === 'object' && c.field.id) ? c.field.id : c.field;
-        if (fieldId === 'bom_item') {{ bomItem = c.value; break; }}
-      }}
-    }}
-    if (bomItem == null) {{ return []; }}
-    return [{{
-      name: 'Drill Through to ' + bomItem,
-      action: function() {{
-        try {{
-          window.__studioSavedState = studioApi.getState();
-          studioApi.setProperty('drillThrough', {{ filter: params.filter }});
-          var backBtn = document.getElementById('studio-back-btn');
-          if (backBtn) {{ backBtn.style.display = 'inline-block'; }}
-        }} catch (e) {{ /* drill-through unavailable; summary stays */ }}
-      }}
-    }}];
-  }}
-  function goBackFromDrillThrough() {{
-    try {{
-      if (window.__studioSavedState) {{
-        studioApi.setState(window.__studioSavedState);
-        studioApi.setProperty('drillThrough', undefined);
-        window.__studioSavedState = null;
-      }}
-    }} catch (e) {{ /* restore failed; summary stays as-is */ }}
-    var backBtn = document.getElementById('studio-back-btn');
-    if (backBtn) {{ backBtn.style.display = 'none'; }}
-  }}
-  try {{
-    if (studioApi && typeof studioApi.setProperty === 'function') {{
-      studioApi.setProperty('getContextMenuItems', getStudioContextMenuItems);
-    }}
-  }} catch (e) {{ /* context menu unavailable; Studio still works */ }}
-  var studioBackBtn = document.getElementById('studio-back-btn');
-  if (studioBackBtn) {{ studioBackBtn.addEventListener('click', goBackFromDrillThrough); }}
   // Custom widget "Rejection Trail": a plain-JS AG Studio widget (no
   // build step) that lists each cart candidate with its verdict and
   // rejection reason. Registered via window.agStudio.createWidgets()
@@ -926,17 +860,83 @@ paypal.Buttons({{
     defaultSize: {{ width: 600, height: 400 }},
     minSize: {{ width: 400, height: 200 }}
   }};
+
+  function startStudio(initialState) {{
+    var options = {{
+      data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
+      mode: 'edit',
+      onStateUpdated: saveStudioState,
+      widgets: function(widgetConfig) {{
+        try {{
+          if (!window.agStudio || typeof window.agStudio.createWidgets !== 'function') {{ return widgetConfig; }}
+          var baseMenu = (widgetConfig && widgetConfig.menu) ? widgetConfig.menu : [];
+          return window.agStudio.createWidgets({{
+            additionalTypes: [rejectionTrailWidgetDefinition],
+            menu: baseMenu.concat([{{ label: 'Custom', widgetIds: ['rejection-trail'] }}])
+          }});
+        }} catch (e) {{ return widgetConfig; }}
+      }}
+    }};
+    if (initialState) {{ options.initialState = initialState; }}
+    return window.agStudio.createStudio(canvas, options);
+  }}
+  var studioApi = null;
   try {{
-    if (window.agStudio && typeof window.agStudio.createWidgets === 'function' && studioApi && typeof studioApi.setProperty === 'function') {{
-      studioApi.setProperty('widgets', function(widgetConfig) {{
-        var baseMenu = (widgetConfig && widgetConfig.menu) ? widgetConfig.menu : [];
-        return window.agStudio.createWidgets({{
-          additionalTypes: [rejectionTrailWidgetDefinition],
-          menu: baseMenu.concat([{{ label: 'Custom', widgetIds: ['rejection-trail'] }}])
-        }});
-      }});
+    studioApi = startStudio(savedState);
+  }} catch (e) {{
+    // The saved layout did not fit this data (for example it was saved
+    // against a different field set). Drop it and start blank.
+    try {{ localStorage.removeItem('spectocartStudioState'); }} catch (e2) {{}}
+    try {{ studioApi = startStudio(null); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
+  }}
+  if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
+  // Drill Through: right-click a Studio row or chart bar to open a detail
+  // report filtered to that BOM item. Saves the summary state so
+  // "Back to summary" can restore it. Guarded so a Studio failure
+  // never breaks the grid or PayPal panel above.
+  function getStudioContextMenuItems(params) {{
+    if (!params || params.filter == null) {{ return []; }}
+    var filter = params.filter;
+    var conditions = (filter.operator === 'AND' && filter.conditions) ? filter.conditions : [filter];
+    var bomItem = null;
+    for (var i = 0; i < conditions.length; i++) {{
+      var c = conditions[i];
+      if (c && c.field) {{
+        var fieldId = (typeof c.field === 'object' && c.field.id) ? c.field.id : c.field;
+        if (fieldId === 'bom_item') {{ bomItem = c.value; break; }}
+      }}
     }}
-  }} catch (e) {{ /* custom widget unavailable; Studio still works without it */ }}
+    if (bomItem == null) {{ return []; }}
+    return [{{
+      name: 'Drill Through to ' + bomItem,
+      action: function() {{
+        try {{
+          window.__studioSavedState = studioApi.getState();
+          studioApi.setProperty('drillThrough', {{ filter: params.filter }});
+          var backBtn = document.getElementById('studio-back-btn');
+          if (backBtn) {{ backBtn.style.display = 'inline-block'; }}
+        }} catch (e) {{ /* drill-through unavailable; summary stays */ }}
+      }}
+    }}];
+  }}
+  function goBackFromDrillThrough() {{
+    try {{
+      if (window.__studioSavedState) {{
+        studioApi.setState(window.__studioSavedState);
+        studioApi.setProperty('drillThrough', undefined);
+        window.__studioSavedState = null;
+      }}
+    }} catch (e) {{ /* restore failed; summary stays as-is */ }}
+    var backBtn = document.getElementById('studio-back-btn');
+    if (backBtn) {{ backBtn.style.display = 'none'; }}
+  }}
+  try {{
+    if (studioApi && typeof studioApi.setProperty === 'function') {{
+      studioApi.setProperty('getContextMenuItems', getStudioContextMenuItems);
+    }}
+  }} catch (e) {{ /* context menu unavailable; Studio still works */ }}
+  var studioBackBtn = document.getElementById('studio-back-btn');
+  if (studioBackBtn) {{ studioBackBtn.addEventListener('click', goBackFromDrillThrough); }}
   // Edit / View buttons: Studio shows no mode switch of its own.
   function setStudioMode(mode) {{
     if (window.spectocartStudioApi && typeof window.spectocartStudioApi.setProperty === 'function') {{
