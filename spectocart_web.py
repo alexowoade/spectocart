@@ -616,6 +616,7 @@ def cart():
   <button type="button" id="studioModeEdit" style="padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">Edit</button>
   <button type="button" id="studioModeView" style="padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">View</button>
 </div>
+<button id="studio-back-btn" type="button" style="display:none;margin:0 0 0.75rem;padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">&larr; Back to summary</button>
 <div id="agStudioCanvas" style="height:520px;width:100%"></div>
 </div>
 {steps_html}
@@ -661,6 +662,57 @@ if (window.agGrid) {{
 function exportCartCsv() {{
   if (window.gridApi) {{ window.gridApi.exportDataAsCsv({{ fileName: "spectocart-cart.csv" }}); }}
 }}
+// Filter grid to item: honest one-way filter for the external AG Grid.
+// Pick a BOM item from the dropdown (or "Show all") and the grid's
+// quick filter narrows to that item. This is not Studio cross-filtering;
+// it is a plain grid quick filter, labelled as such.
+function filterGridToItem(bomItem) {{
+  if (!window.gridApi || typeof window.gridApi.setGridOption !== 'function') {{ return; }}
+  try {{
+    window.gridApi.setGridOption('quickFilterText', bomItem || '');
+  }} catch (e) {{ /* grid filter unavailable */ }}
+}}
+function buildGridFilterControl() {{
+  var gridEl = document.querySelector('#agCartGrid');
+  if (!gridEl || !gridEl.parentNode || document.getElementById('gridFilterSelect')) {{ return; }}
+  var bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin:0 0 0.75rem;flex-wrap:wrap';
+  var label = document.createElement('span');
+  label.style.cssText = 'color:var(--muted);font-size:0.85rem';
+  label.textContent = 'Filter grid to item:';
+  var select = document.createElement('select');
+  select.id = 'gridFilterSelect';
+  select.style.cssText = 'padding:0.35rem 0.6rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0';
+  var allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = 'Show all';
+  select.appendChild(allOpt);
+  try {{
+    var seen = {{}};
+    (typeof rowData !== 'undefined' ? rowData : []).forEach(function(r) {{
+      var b = r && r.bom_item;
+      if (b && !seen[b]) {{
+        seen[b] = true;
+        var o = document.createElement('option');
+        o.value = b;
+        o.textContent = b;
+        select.appendChild(o);
+      }}
+    }});
+  }} catch (e) {{ /* rowData unavailable; select stays Show all */ }}
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn-secondary';
+  btn.style.cssText = 'padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer';
+  btn.textContent = 'Filter grid to this item';
+  btn.addEventListener('click', function() {{ filterGridToItem(select.value); }});
+  select.addEventListener('change', function() {{ filterGridToItem(select.value); }});
+  bar.appendChild(label);
+  bar.appendChild(select);
+  bar.appendChild(btn);
+  gridEl.parentNode.insertBefore(bar, gridEl);
+}}
+buildGridFilterControl();
 function toggleGate(checked) {{
   const el = document.getElementById('paypal-button-container');
   el.style.opacity = checked ? '1' : '0.35';
@@ -741,6 +793,157 @@ paypal.Buttons({{
     try {{ studioApi = startStudio(null); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
+  // Drill Through: right-click a Studio row or chart bar to open a detail
+  // report filtered to that BOM item. Saves the summary state so
+  // "Back to summary" can restore it. Guarded so a Studio failure
+  // never breaks the grid or PayPal panel above.
+  function getStudioContextMenuItems(params) {{
+    if (!params || params.filter == null) {{ return []; }}
+    var filter = params.filter;
+    var conditions = (filter.operator === 'AND' && filter.conditions) ? filter.conditions : [filter];
+    var bomItem = null;
+    for (var i = 0; i < conditions.length; i++) {{
+      var c = conditions[i];
+      if (c && c.field) {{
+        var fieldId = (typeof c.field === 'object' && c.field.id) ? c.field.id : c.field;
+        if (fieldId === 'bom_item') {{ bomItem = c.value; break; }}
+      }}
+    }}
+    if (bomItem == null) {{ return []; }}
+    return [{{
+      name: 'Drill Through to ' + bomItem,
+      action: function() {{
+        try {{
+          window.__studioSavedState = studioApi.getState();
+          studioApi.setProperty('drillThrough', {{ filter: params.filter }});
+          var backBtn = document.getElementById('studio-back-btn');
+          if (backBtn) {{ backBtn.style.display = 'inline-block'; }}
+        }} catch (e) {{ /* drill-through unavailable; summary stays */ }}
+      }}
+    }}];
+  }}
+  function goBackFromDrillThrough() {{
+    try {{
+      if (window.__studioSavedState) {{
+        studioApi.setState(window.__studioSavedState);
+        studioApi.setProperty('drillThrough', undefined);
+        window.__studioSavedState = null;
+      }}
+    }} catch (e) {{ /* restore failed; summary stays as-is */ }}
+    var backBtn = document.getElementById('studio-back-btn');
+    if (backBtn) {{ backBtn.style.display = 'none'; }}
+  }}
+  try {{
+    if (studioApi && typeof studioApi.setProperty === 'function') {{
+      studioApi.setProperty('getContextMenuItems', getStudioContextMenuItems);
+    }}
+  }} catch (e) {{ /* context menu unavailable; Studio still works */ }}
+  var studioBackBtn = document.getElementById('studio-back-btn');
+  if (studioBackBtn) {{ studioBackBtn.addEventListener('click', goBackFromDrillThrough); }}
+  // Custom widget "Rejection Trail": a plain-JS AG Studio widget (no
+  // build step) that lists each cart candidate with its verdict and
+  // rejection reason. Registered via window.agStudio.createWidgets()
+  // and set on the Studio with the 'widgets' property. Guarded so a
+  // missing createWidgets or a registration failure never breaks the
+  // Studio, grid, or PayPal panel.
+  function RejectionTrailComponent() {{
+    this.eGui = null;
+    this.widgetApi = null;
+  }}
+  RejectionTrailComponent.prototype.init = function(params) {{
+    this.widgetApi = params && params.widgetApi;
+    this.eGui = document.createElement('div');
+    this.eGui.style.cssText = 'padding:12px;font-size:12px;overflow-y:auto;height:100%;box-sizing:border-box';
+    this.loadData(params);
+  }};
+  RejectionTrailComponent.prototype.loadData = function(params) {{
+    var self = this;
+    try {{ if (this.widgetApi && this.widgetApi.setDisplayState) {{ this.widgetApi.setDisplayState('loading'); }} }} catch (e) {{}}
+    function render(rows) {{
+      try {{ if (self.widgetApi && self.widgetApi.setDisplayState) {{ self.widgetApi.setDisplayState('displayed'); }} }} catch (e) {{}}
+      var html = '<div style="font-weight:600;margin-bottom:8px">Rejection Trail</div>';
+      html += '<table style="width:100%;border-collapse:collapse">';
+      html += '<thead><tr>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Candidate</th>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Merchant</th>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Price</th>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Score</th>'
+        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Verdict</th>'
+        + '</tr></thead><tbody>';
+      (rows || []).forEach(function(r) {{
+        var reason = r.rejected_because || r.critic_reason || '';
+        var rejected = !!(reason || r.critic_reject === true || r.critic_verdict === '\u2717 REJECT');
+        var color = rejected ? '#fca5a5' : '#34d399';
+        var mark = rejected ? '\u2717' : '\u2713';
+        var verdictText = rejected ? (reason || 'rejected') : (r.win_reason || 'winner');
+        var score = (r.relevance_score != null ? r.relevance_score : (r.relevance || ''));
+        var price = (r.unit_price != null && r.unit_price !== '' ? '$' + Number(r.unit_price).toFixed(2) : '');
+        html += '<tr>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + (r.sourced_title || r.bom_item || '') + '</td>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + (r.merchant || '') + '</td>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + price + '</td>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + score + '</td>'
+          + '<td style="padding:4px 8px;border-bottom:1px solid #334155;color:' + color + '">' + mark + ' ' + verdictText + '</td>'
+          + '</tr>';
+      }});
+      html += '</tbody></table>';
+      self.eGui.innerHTML = html;
+    }}
+    var api = this.widgetApi;
+    var fallbackRows = (typeof rowData !== 'undefined' ? rowData : []);
+    if (api && typeof api.getData === 'function') {{
+      try {{
+        var p = api.getData({{ fields: ['bom_item', 'sourced_title', 'merchant', 'unit_price', 'relevance_score', 'relevance', 'rejected_because', 'critic_reason', 'critic_verdict', 'win_reason', 'critic_reject'] }});
+        if (p && typeof p.then === 'function') {{
+          p.then(function(resp) {{ render(resp && resp.results ? resp.results : fallbackRows); }}).catch(function() {{ render(fallbackRows); }});
+        }} else if (p && p.results) {{
+          render(p.results);
+        }} else {{
+          render(fallbackRows);
+        }}
+      }} catch (e) {{
+        render(fallbackRows);
+      }}
+    }} else {{
+      render(fallbackRows);
+    }}
+  }};
+  RejectionTrailComponent.prototype.getGui = function() {{ return this.eGui; }};
+  RejectionTrailComponent.prototype.destroy = function() {{ if (this.eGui) {{ this.eGui.remove(); }} }};
+  var rejectionTrailWidgetDefinition = {{
+    id: 'rejection-trail',
+    label: 'Rejection Trail',
+    dataMapping: {{
+      bomItem: {{
+        type: 'field',
+        supportedRoles: ['category'],
+        requires: {{ cardinality: 'one' }},
+        required: true,
+        aiDescription: 'BOM item to group candidates by.'
+      }}
+    }},
+    formatShape: function(s) {{
+      return s.object({{
+        caption: s.string({{ description: 'Widget caption' }}).optional(),
+        triggerCrossFilter: s.boolean({{ description: 'Click row to cross-filter' }}).optional()
+      }});
+    }},
+    ai: {{
+      description: 'Displays the rejection audit trail for each BOM item — every Channel3 candidate considered, with its rejection reason.'
+    }},
+    comp: RejectionTrailComponent,
+    defaultSize: {{ width: 600, height: 400 }},
+    minSize: {{ width: 400, height: 200 }}
+  }};
+  try {{
+    if (window.agStudio && typeof window.agStudio.createWidgets === 'function' && studioApi && typeof studioApi.setProperty === 'function') {{
+      var rejectionTrailWidgets = window.agStudio.createWidgets({{
+        additionalTypes: [rejectionTrailWidgetDefinition],
+        menu: [{{ label: 'Custom', widgetIds: ['rejection-trail'] }}]
+      }});
+      studioApi.setProperty('widgets', rejectionTrailWidgets);
+    }}
+  }} catch (e) {{ /* custom widget unavailable; Studio still works without it */ }}
   // Edit / View buttons: Studio shows no mode switch of its own.
   function setStudioMode(mode) {{
     if (window.spectocartStudioApi && typeof window.spectocartStudioApi.setProperty === 'function') {{
