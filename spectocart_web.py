@@ -155,6 +155,8 @@ details summary { cursor: pointer; color: var(--muted); font-size: 0.78rem; marg
 .kpi { background: var(--card-alt); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
 .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .kpi-val { font-size: 1.35rem; font-weight: 800; margin-top: 0.15rem; }
+/* Studio table: force the grid viewport tall enough for all rows (diagnosed 85px, content 122px). */
+#agStudioCanvas .ag-grid-viewport { height: 250px !important; }
 </style>
 """
 
