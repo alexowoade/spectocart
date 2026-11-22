@@ -775,6 +775,47 @@ paypal.Buttons({{
     }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
   }}
 
+  // Default dashboard: a first-time visitor (no saved layout) sees a
+  // finished report instead of an empty canvas. A saved layout still
+  // wins because startStudio is called with savedState first.
+  var defaultDashboardState = {{
+    pages: [{{
+      id: 'page-1',
+      widgets: {{
+        'kpi-cart-total': {{
+          type: 'value',
+          dataMapping: {{ value: [{{ id: 'cart.line_total', aggregation: 'sum' }}] }},
+          format: {{ style: {{ label: {{ enabled: true, text: 'Verified Cart Total' }} }} }}
+        }},
+        'spend-by-item': {{
+          type: 'bar-chart-grouped',
+          dataMapping: {{
+            categoryKey: [{{ id: 'cart.bom_item' }}],
+            valueKey: [{{ id: 'cart.line_total', aggregation: 'sum' }}]
+          }}
+        }},
+        'cart-table': {{
+          type: 'grid',
+          dataMapping: {{
+            cols: [
+              {{ id: 'cart.bom_item' }},
+              {{ id: 'cart.sourced_title' }},
+              {{ id: 'cart.quantity' }},
+              {{ id: 'cart.unit_price' }},
+              {{ id: 'cart.line_total' }},
+              {{ id: 'cart.critic_verdict' }}
+            ]
+          }}
+        }}
+      }},
+      widgetLayout: {{
+        'kpi-cart-total': {{ xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 6 }},
+        'spend-by-item': {{ xTrack: 0, yTrack: 6, xSpan: 24, ySpan: 14 }},
+        'cart-table': {{ xTrack: 0, yTrack: 20, xSpan: 24, ySpan: 12 }}
+      }}
+    }}],
+    selectedPageId: 'page-1'
+  }};
   function startStudio(initialState) {{
     var options = {{
       data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
@@ -786,12 +827,12 @@ paypal.Buttons({{
   }}
   var studioApi = null;
   try {{
-    studioApi = startStudio(savedState);
+    studioApi = startStudio(savedState || defaultDashboardState);
   }} catch (e) {{
     // The saved layout did not fit this data (for example it was saved
-    // against a different field set). Drop it and start blank.
+    // against a different field set). Drop it and start with the default dashboard.
     try {{ localStorage.removeItem('spectocartStudioState'); }} catch (e2) {{}}
-    try {{ studioApi = startStudio(null); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
+    try {{ studioApi = startStudio(defaultDashboardState); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
   // Drill Through: right-click a Studio row or chart bar to open a detail
