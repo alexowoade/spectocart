@@ -262,6 +262,9 @@ def cart_load_demo():
         "evaluated_by_item": saved.get("evaluated_by_item", []),
         "critic_verdicts": saved.get("critic_verdicts", []),
         "steps": saved.get("steps", []),
+        # Keep the full pre-fallback steps so /cart/rebudget can restore
+        # steps for items that come back when the cap is raised again.
+        "all_steps": [dict(s) for s in saved.get("steps", [])],
         "project_math": asdict(pm),
         "fallback_applied": bool(drops),
         "fallback_policy": FALLBACK_POLICY,
@@ -293,6 +296,12 @@ def cart_rebudget():
     cart_obj["budget"] = new_budget
     cart_obj["grand_total"] = grand_total
     cart_obj["items"] = kept
+    kept_bom = {r.get("bom_item") for r in kept}
+    full_steps = cart_obj.get("all_steps") or cart_obj.get("steps") or []
+    kept_steps = [dict(s) for s in full_steps if s.get("item") in kept_bom]
+    for i, s in enumerate(kept_steps, start=1):
+        s["n"] = i
+    cart_obj["steps"] = kept_steps
     cart_obj["fallback_applied"] = bool(drops)
     cart_obj["fallback_drops"] = drops
     _save_json(CART_FILE, cart_obj)
@@ -545,12 +554,13 @@ def cart():
         )
     ag_json = json.dumps(ag_rows)
     studio_key_json = json.dumps(os.getenv("AG_STUDIO_LICENSE_KEY", "").strip())
+    total_qty = sum(int(r["quantity"]) for r in cart["items"])
     pinned_json = json.dumps([{
         "bom_item": "TOTAL",
         "priority": "",
         "sourced_title": f"{len(cart['items'])} verified SKUs",
         "merchant": "",
-        "quantity": "",
+        "quantity": total_qty,
         "unit_price": "",
         "line_total": cart["grand_total"],
         "relevance": "",
