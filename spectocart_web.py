@@ -844,18 +844,13 @@ paypal.Buttons({{
   }};
   RejectionTrailComponent.prototype.getGui = function() {{ return this.eGui; }};
   RejectionTrailComponent.prototype.destroy = function() {{ if (this.eGui) {{ this.eGui.remove(); }} }};
+  RejectionTrailComponent.prototype.refresh = function(params) {{
+    this.widgetApi = params && params.widgetApi ? params.widgetApi : this.widgetApi;
+    this.loadData(params);
+  }};
   var rejectionTrailWidgetDefinition = {{
     id: 'rejection-trail',
     label: 'Rejection Trail',
-    dataMapping: {{
-      bomItem: {{
-        type: 'field',
-        supportedRoles: ['category'],
-        requires: {{ cardinality: 'one' }},
-        required: true,
-        aiDescription: 'BOM item to group candidates by.'
-      }}
-    }},
     comp: RejectionTrailComponent,
     defaultSize: {{ width: 600, height: 400 }},
     minSize: {{ width: 400, height: 200 }}
