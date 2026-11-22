@@ -761,7 +761,7 @@ paypal.Buttons({{
   // The layout is plain JSON: widgets, columns, widths and filters.
   var savedState = null;
   try {{
-    var raw = localStorage.getItem('spectocartStudioStateV4');
+    var raw = localStorage.getItem('spectocartStudioStateV5');
     if (raw) {{ savedState = JSON.parse(raw); }}
   }} catch (e) {{ savedState = null; }}
   // Save the layout to this browser whenever it really changes.
@@ -770,7 +770,7 @@ paypal.Buttons({{
   function saveStudioState(event) {{
     try {{
       if (event && event.durable && event.state) {{
-        localStorage.setItem('spectocartStudioStateV4', JSON.stringify(event.state));
+        localStorage.setItem('spectocartStudioStateV5', JSON.stringify(event.state));
       }}
     }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
   }}
@@ -804,6 +804,11 @@ paypal.Buttons({{
               {{ id: 'cart.line_total' }},
               {{ id: 'cart.critic_verdict' }}
             ]
+          }},
+          format: {{
+            style: {{
+              theme: {{ rowHeight: 24 }}
+            }}
           }}
         }}
       }},
@@ -831,7 +836,7 @@ paypal.Buttons({{
   }} catch (e) {{
     // The saved layout did not fit this data (for example it was saved
     // against a different field set). Drop it and start with the default dashboard.
-    try {{ localStorage.removeItem('spectocartStudioStateV4'); }} catch (e2) {{}}
+    try {{ localStorage.removeItem('spectocartStudioStateV5'); }} catch (e2) {{}}
     try {{ studioApi = startStudio(defaultDashboardState); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
