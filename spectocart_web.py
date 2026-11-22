@@ -1124,8 +1124,8 @@ def _vault_setup_token():
               "payment_source": {"paypal": {
                   "usage_type": "MERCHANT",
                   "experience_context": {
-                      "return_url": "http://127.0.0.1:5000/vault/return",
-                      "cancel_url": "http://127.0.0.1:5000/vault/cancel",
+                      "return_url": "https://spectocart.duckdns.org/vault/return",
+                      "cancel_url": "https://spectocart.duckdns.org/vault/cancel",
                   }}}},
         timeout=15,
     )
