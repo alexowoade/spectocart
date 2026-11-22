@@ -816,105 +816,12 @@ paypal.Buttons({{
     }}],
     selectedPageId: 'page-1'
   }};
-  // Custom widget "Rejection Trail": a plain-JS AG Studio widget (no
-  // build step) that lists each cart candidate with its verdict and
-  // rejection reason. Registered via window.agStudio.createWidgets()
-  // and set on the Studio with the 'widgets' property. Guarded so a
-  // missing createWidgets or a registration failure never breaks the
-  // Studio, grid, or PayPal panel.
-  function RejectionTrailComponent() {{
-    if (!(this instanceof RejectionTrailComponent)) {{ return new RejectionTrailComponent(); }}
-    this.eGui = null;
-    this.widgetApi = null;
-  }}
-  RejectionTrailComponent.prototype.init = function(params) {{
-    this.widgetApi = params && params.widgetApi;
-    this.eGui = document.createElement('div');
-    this.eGui.style.cssText = 'padding:12px;font-size:12px;overflow-y:auto;height:100%;box-sizing:border-box';
-    this.loadData(params);
-  }};
-  RejectionTrailComponent.prototype.loadData = function(params) {{
-    var self = this;
-    try {{ if (this.widgetApi && this.widgetApi.setDisplayState) {{ this.widgetApi.setDisplayState('loading'); }} }} catch (e) {{}}
-    function render(rows) {{
-      try {{ if (self.widgetApi && self.widgetApi.setDisplayState) {{ self.widgetApi.setDisplayState('displayed'); }} }} catch (e) {{}}
-      var html = '<div style="font-weight:600;margin-bottom:8px">Rejection Trail</div>';
-      html += '<table style="width:100%;border-collapse:collapse">';
-      html += '<thead><tr>'
-        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Candidate</th>'
-        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Merchant</th>'
-        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Price</th>'
-        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Score</th>'
-        + '<th style="text-align:left;padding:4px 8px;border-bottom:1px solid #334155">Verdict</th>'
-        + '</tr></thead><tbody>';
-      (rows || []).forEach(function(r) {{
-        var reason = r.rejected_because || r.critic_reason || '';
-        var rejected = !!(reason || r.critic_reject === true || r.critic_verdict === '\u2717 REJECT');
-        var color = rejected ? '#fca5a5' : '#34d399';
-        var mark = rejected ? '\u2717' : '\u2713';
-        var verdictText = rejected ? (reason || 'rejected') : (r.win_reason || 'winner');
-        var score = (r.relevance_score != null ? r.relevance_score : (r.relevance || ''));
-        var price = (r.unit_price != null && r.unit_price !== '' ? '$' + Number(r.unit_price).toFixed(2) : '');
-        html += '<tr>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + (r.sourced_title || r.bom_item || '') + '</td>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + (r.merchant || '') + '</td>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + price + '</td>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #334155">' + score + '</td>'
-          + '<td style="padding:4px 8px;border-bottom:1px solid #334155;color:' + color + '">' + mark + ' ' + verdictText + '</td>'
-          + '</tr>';
-      }});
-      html += '</tbody></table>';
-      self.eGui.innerHTML = html;
-    }}
-    var api = this.widgetApi;
-    var fallbackRows = (typeof rowData !== 'undefined' ? rowData : []);
-    if (api && typeof api.getData === 'function') {{
-      try {{
-        var p = api.getData({{ fields: ['bom_item', 'sourced_title', 'merchant', 'unit_price', 'relevance_score', 'relevance', 'rejected_because', 'critic_reason', 'critic_verdict', 'win_reason', 'critic_reject'] }});
-        if (p && typeof p.then === 'function') {{
-          p.then(function(resp) {{ render(resp && resp.results ? resp.results : fallbackRows); }}).catch(function() {{ render(fallbackRows); }});
-        }} else if (p && p.results) {{
-          render(p.results);
-        }} else {{
-          render(fallbackRows);
-        }}
-      }} catch (e) {{
-        render(fallbackRows);
-      }}
-    }} else {{
-      render(fallbackRows);
-    }}
-  }};
-  RejectionTrailComponent.prototype.getGui = function() {{ return this.eGui; }};
-  RejectionTrailComponent.prototype.destroy = function() {{ if (this.eGui) {{ this.eGui.remove(); }} }};
-  RejectionTrailComponent.prototype.refresh = function(params) {{
-    this.widgetApi = params && params.widgetApi ? params.widgetApi : this.widgetApi;
-    this.loadData(params);
-  }};
-  var rejectionTrailWidgetDefinition = {{
-    id: 'rejection-trail',
-    label: 'Rejection Trail',
-    comp: RejectionTrailComponent,
-    defaultSize: {{ width: 600, height: 400 }},
-    minSize: {{ width: 400, height: 200 }}
-  }};
-
   function startStudio(initialState) {{
     var options = {{
       data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
       mode: 'edit',
       onStateUpdated: saveStudioState,
-      getContextMenuItems: getStudioContextMenuItems,
-      widgets: function(widgetConfig) {{
-        try {{
-          if (!window.agStudio || typeof window.agStudio.createWidgets !== 'function') {{ return widgetConfig; }}
-          var baseMenu = (widgetConfig && widgetConfig.menu) ? widgetConfig.menu : [];
-          return window.agStudio.createWidgets({{
-            additionalTypes: [rejectionTrailWidgetDefinition],
-            menu: baseMenu.concat([{{ label: 'Custom', widgetIds: ['rejection-trail'] }}])
-          }});
-        }} catch (e) {{ return widgetConfig; }}
-      }}
+      getContextMenuItems: getStudioContextMenuItems
     }};
     if (initialState) {{ options.initialState = initialState; }}
     return window.agStudio.createStudio(canvas, options);
