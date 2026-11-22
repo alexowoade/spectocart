@@ -617,7 +617,7 @@ def cart():
   <button type="button" id="studioModeView" style="padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">View</button>
 </div>
 <button id="studio-back-btn" type="button" style="display:none;margin:0 0 0.75rem;padding:0.35rem 0.9rem;border:1px solid #334155;border-radius:6px;background:#1e293b;color:#e2e8f0;cursor:pointer">&larr; Back to summary</button>
-<div id="agStudioCanvas" style="height:520px;width:100%"></div>
+<div id="agStudioCanvas" style="height:620px;width:100%"></div>
 </div>
 {steps_html}
 <script src="https://www.paypal.com/sdk/js?client-id={client_id}&currency=USD"></script>
@@ -761,7 +761,7 @@ paypal.Buttons({{
   // The layout is plain JSON: widgets, columns, widths and filters.
   var savedState = null;
   try {{
-    var raw = localStorage.getItem('spectocartStudioStateV3');
+    var raw = localStorage.getItem('spectocartStudioStateV4');
     if (raw) {{ savedState = JSON.parse(raw); }}
   }} catch (e) {{ savedState = null; }}
   // Save the layout to this browser whenever it really changes.
@@ -770,7 +770,7 @@ paypal.Buttons({{
   function saveStudioState(event) {{
     try {{
       if (event && event.durable && event.state) {{
-        localStorage.setItem('spectocartStudioStateV3', JSON.stringify(event.state));
+        localStorage.setItem('spectocartStudioStateV4', JSON.stringify(event.state));
       }}
     }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
   }}
@@ -810,7 +810,7 @@ paypal.Buttons({{
       widgetLayout: {{
         'kpi-cart-total': {{ xTrack: 0, yTrack: 0, xSpan: 24, ySpan: 6 }},
         'spend-by-item': {{ xTrack: 0, yTrack: 6, xSpan: 24, ySpan: 14 }},
-        'cart-table': {{ xTrack: 0, yTrack: 20, xSpan: 24, ySpan: 12 }}
+        'cart-table': {{ xTrack: 0, yTrack: 20, xSpan: 24, ySpan: 18 }}
       }}
     }}],
     selectedPageId: 'page-1'
@@ -831,7 +831,7 @@ paypal.Buttons({{
   }} catch (e) {{
     // The saved layout did not fit this data (for example it was saved
     // against a different field set). Drop it and start with the default dashboard.
-    try {{ localStorage.removeItem('spectocartStudioStateV3'); }} catch (e2) {{}}
+    try {{ localStorage.removeItem('spectocartStudioStateV4'); }} catch (e2) {{}}
     try {{ studioApi = startStudio(defaultDashboardState); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
