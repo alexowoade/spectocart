@@ -788,7 +788,7 @@ paypal.Buttons({{
           format: {{ style: {{ label: {{ enabled: true, text: 'Verified Cart Total' }} }} }}
         }},
         'spend-by-item': {{
-          type: 'bar-chart-grouped',
+          type: 'column-chart-grouped',
           dataMapping: {{
             categoryKey: [{{ id: 'cart.bom_item' }}],
             valueKey: [{{ id: 'cart.line_total', aggregation: 'sum' }}]
@@ -819,7 +819,7 @@ paypal.Buttons({{
   function startStudio(initialState) {{
     var options = {{
       data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
-      mode: 'edit',
+      mode: 'view',
       onStateUpdated: saveStudioState,
       getContextMenuItems: getStudioContextMenuItems
     }};
