@@ -761,7 +761,7 @@ paypal.Buttons({{
   // The layout is plain JSON: widgets, columns, widths and filters.
   var savedState = null;
   try {{
-    var raw = localStorage.getItem('spectocartStudioStateV7');
+    var raw = localStorage.getItem('spectocartStudioStateV8');
     if (raw) {{ savedState = JSON.parse(raw); }}
   }} catch (e) {{ savedState = null; }}
   // Save the layout to this browser whenever it really changes.
@@ -770,7 +770,7 @@ paypal.Buttons({{
   function saveStudioState(event) {{
     try {{
       if (event && event.durable && event.state) {{
-        localStorage.setItem('spectocartStudioStateV7', JSON.stringify(event.state));
+        localStorage.setItem('spectocartStudioStateV8', JSON.stringify(event.state));
       }}
     }} catch (e) {{ /* storage unavailable; the live dashboard still works */ }}
   }}
@@ -809,7 +809,8 @@ paypal.Buttons({{
           format: {{
             style: {{
               theme: {{ rowHeight: 24 }},
-              grandTotalRow: {{ enabled: true }}
+              grandTotalRow: {{ enabled: true }},
+              columnAutoSize: true
             }},
             crossFilter: 'filter'
           }}
@@ -824,9 +825,11 @@ paypal.Buttons({{
     selectedPageId: 'page-1'
   }};
   function startStudio(initialState) {{
+    var theme = window.agStudio.createStudioTheme().withParams({{ gridRowHeight: 24 }});
     var options = {{
       data: {{ sources: [{{ id: 'cart', data: rowData }}] }},
       mode: 'view',
+      theme: theme,
       onStateUpdated: saveStudioState,
       getContextMenuItems: getStudioContextMenuItems
     }};
@@ -839,7 +842,7 @@ paypal.Buttons({{
   }} catch (e) {{
     // The saved layout did not fit this data (for example it was saved
     // against a different field set). Drop it and start with the default dashboard.
-    try {{ localStorage.removeItem('spectocartStudioStateV7'); }} catch (e2) {{}}
+    try {{ localStorage.removeItem('spectocartStudioStateV8'); }} catch (e2) {{}}
     try {{ studioApi = startStudio(defaultDashboardState); }} catch (e3) {{ /* Studio failed to start; the grid above still works */ }}
   }}
   if (studioApi) {{ window.spectocartStudioApi = studioApi; }}
