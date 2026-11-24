@@ -15,6 +15,7 @@ from flask import Flask, abort, jsonify, redirect, request, send_file, url_for
 from core_pipeline import (
     FALLBACK_POLICY,
     NoValidOfferError,
+    critic_check,
     _photo_sha256,
     _pick_math_item,
     apply_budget_fallback,
@@ -330,26 +331,32 @@ def analyze():
 
     sourced_cart = []
     evaluated_by_item = []
+    out_of_stock = []
     for item in bom.items:
         try:
             match = search_channel3_product(item.search_query, item.max_unit_price, relevance_text=item.item_name)
         except NoValidOfferError as exc:
-            rows = "".join(
-                f"<tr><td>{e.get('title', '')} [{e.get('merchant', '')}]</td>"
-                f"<td>${e.get('unit_price') if e.get('unit_price') is not None else ''}</td>"
-                f"<td>{e.get('relevance_score', '')}: {', '.join(e.get('matched_words') or [])}</td>"
-                f"<td><span class='badge badge-warn'>{e.get('rejected_because') or 'valid, lost tie'}</span></td></tr>"
-                for e in exc.evaluated
-            )
-            return (
-                f"<!doctype html><html><head><title>SpecToCart — Zero-Hallucination Stop</title>{PAGE_CSS}</head><body>{NAV_HTML}"
-                f"<div class='card'><h1>Zero-Hallucination Stop: No Valid Offer for {item.item_name}</h1>"
-                f"<p class='subtitle'>Search query: <code>{exc.query}</code> &bull; Max unit price: ${item.max_unit_price:.2f}</p>"
-                f"<p>{exc}</p>"
-                f"<table><tr><th>Candidate</th><th>Price</th><th>Relevance</th><th>Rejection Reason</th></tr>{rows}</table>"
-                f"<p style='margin-top:1rem'><a class='btn' href='/'>Try Again</a></p></div></body></html>",
-                400,
-            )
+            print(f"  ✗ {item.item_name}: no valid offer, moving to Out of Stock.")
+            out_of_stock.append({
+                "bom_item": item.item_name,
+                "priority": item.priority,
+                "quantity": item.quantity,
+                "target_unit_budget": item.max_unit_price,
+                "search_query": item.search_query,
+                "ai_reasoning": item.ai_reasoning,
+                "evaluated": [
+                    {
+                        "title": e.title,
+                        "unit_price": e.unit_price,
+                        "merchant": e.merchant,
+                        "relevance_score": e.relevance_score,
+                        "matched_words": list(e.matched_words or []),
+                        "rejected_because": e.rejected_because,
+                    }
+                    for e in exc.evaluated
+                ],
+            })
+            continue
         except LookupError as exc:
             return (f"Channel3 returned no products for '{item.item_name}': {exc}. No PayPal order was created. <a href='/'>Try again</a>", 400)
 
@@ -377,6 +384,22 @@ def analyze():
             "win_reason": match.get("win_reason", ""),
         })
 
+    if not sourced_cart:
+        rows = "".join(
+            f"<tr><td>{o['bom_item']}</td>"
+            f"<td>{o['priority']}</td>"
+            f"<td>{o['search_query']}</td></tr>"
+            for o in out_of_stock
+        )
+        return (
+            f"<!doctype html><html><head><title>SpecToCart — Zero-Hallucination Stop</title>{PAGE_CSS}</head><body>{NAV_HTML}"
+            f"<div class='card'><h1>Zero-Hallucination Stop: No Valid Offer for any item</h1>"
+            f"<p>Every BOM item failed Channel3 matching. They are listed as Out of Stock below. No PayPal order was created.</p>"
+            f"<table><tr><th>Item</th><th>Priority</th><th>Search query</th></tr>{rows}</table>"
+            f"<p style='margin-top:1rem'><a class='btn' href='/'>Try Again</a></p></div></body></html>",
+            400,
+        )
+
     math_item = _pick_math_item(sourced_cart)
     pm = compute_project_math(
         length_in, width_in, None,
@@ -397,6 +420,21 @@ def analyze():
             400,
         )
 
+    # Critic pass (second Gemini call per item, same as CLI --critic).
+    # Verdicts are logged only; nothing is dropped here.
+    critic_verdicts = []
+    for row in sourced_cart:
+        try:
+            v = critic_check(row["bom_item"], row["sourced_title"], row["merchant"], row["unit_price"])
+        except Exception as exc:
+            print(f"  critic skipped for {row['bom_item']}: {exc}")
+            v = None
+        critic_verdicts.append({
+            "bom_item": row["bom_item"],
+            "sourced_title": row["sourced_title"],
+            "verdict": v.model_dump() if v is not None else None,
+        })
+
     cart = {
         "photo_path": image_path,
         "project_title": bom.project_title,
@@ -411,6 +449,8 @@ def analyze():
         "fallback_applied": bool(fallback_drops),
         "fallback_policy": FALLBACK_POLICY,
         "fallback_drops": fallback_drops,
+        "out_of_stock": out_of_stock,
+        "critic_verdicts": critic_verdicts,
     }
     _save_json(CART_FILE, cart)
     return redirect(url_for("cart"))
@@ -518,9 +558,60 @@ def cart():
             "relevance": f"Score {row['relevance_score']} ({', '.join(row['matched_words'])})",
             "win_reason": row.get("win_reason", ""),
             "critic_reject": bool(critic and critic.get("plausible") is False),
-            "critic_verdict": ("\u2717 REJECT" if critic and critic.get("plausible") is False else ("\u2713 pass" if critic and critic.get("plausible") is True else "\u2014")),
+            "critic_verdict": ("\u2717 REJECT" if critic and critic.get("plausible") is False else ("\u2713 PASS" if critic and critic.get("plausible") is True else "\u2014")),
             "critic_reason": critic.get("reason", "") if critic else "",
         })
+
+    # Out of Stock section: items Gemini listed but Channel3 could not match.
+    out_of_stock = cart.get("out_of_stock") or []
+    out_of_stock_html = ""
+    if out_of_stock:
+        oos_blocks = ""
+        for o in out_of_stock:
+            ev = o.get("evaluated") or []
+            rej_lines = "".join(
+                f"<div style='margin-top:0.2rem;color:#fca5a5'>&#10007; {e.get('title', '')[:55]} [{e.get('merchant', '')}] "
+                f"${e.get('unit_price') if e.get('unit_price') is not None else '—'} &rarr; <code>{e.get('rejected_because')}</code></div>"
+                for e in ev
+            )
+            oos_blocks += (
+                f"<div style='border:1px solid rgba(248,113,113,0.35);border-radius:10px;padding:0.85rem;margin-top:0.75rem;background:rgba(248,113,113,0.05)'>"
+                f"<div style='display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap'>"
+                f"<span class='badge badge-warn'>&#10007; NO MATCH</span>"
+                f"<b>{o.get('bom_item', '')}</b>"
+                f"<span class='badge badge-optional'>{o.get('priority', '')}</span>"
+                f"<span style='color:var(--muted);font-size:0.82rem'>Qty: {o.get('quantity', '')}</span>"
+                f"</div>"
+                f"<div style='font-size:0.82rem;color:var(--muted);margin-top:0.35rem'>Search query: <code>{o.get('search_query', '')}</code></div>"
+                f"{rej_lines}"
+                f"</div>"
+            )
+        # Also add the out-of-stock items to the AG Grid so the grid
+        # itself shows the reject, not only the card below.
+        for o in out_of_stock:
+            ev = o.get("evaluated") or []
+            n_rej = len(ev)
+            ag_rows.append({
+                "bom_item": o.get("bom_item", ""),
+                "priority": o.get("priority", ""),
+                "sourced_title": "No valid Channel3 offer",
+                "merchant": "—",
+                "quantity": o.get("quantity", ""),
+                "unit_price": 0,
+                "line_total": 0,
+                "relevance": f"0 valid ({n_rej} rejected)",
+                "win_reason": "",
+                "critic_reject": True,
+                "critic_verdict": "✗ NO MATCH",
+                "critic_reason": f"{n_rej} candidates rejected, all insufficient relevance",
+            })
+        out_of_stock_html = (
+            "<div class='card' style='margin-top:1.5rem'>"
+            "<h2 style='margin:0 0 0.25rem'>No Match</h2>"
+            "<p style='color:var(--muted);font-size:0.85rem;margin:0'>These BOM items had no Channel3 candidate with a valid relevance match, so they were not bought. The rest of the cart went through. Zero-Hallucination: no wrong product was substituted.</p>"
+            f"{oos_blocks}"
+            "</div>"
+        )
 
     vault = _load_json(VAULT_FILE, None)
     if vault and vault.get("payment_token_id"):
@@ -610,6 +701,7 @@ def cart():
     {vault_html}
   </div>
 </div>
+{out_of_stock_html}
 <div class="card" style="margin-top:1.5rem">
   <h2 style="margin:0 0 0.5rem">Interactive CFO Audit Studio (AG Studio)</h2>
   <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.75rem">Same verified cart data, as a live dashboard you can build on. Switch to Edit mode in the Studio toolbar to drag, resize and add charts — or View mode to present it. Without a licence key it runs in trial mode with a watermark.</p>
@@ -629,8 +721,11 @@ const criticVerdictRenderer = p => {{
   if (p.value === "\u2717 REJECT") {{
     el.textContent = "\u2717 REJECT";
     el.style.cssText = "color:#fca5a5;font-weight:700;font-size:12px";
-  }} else if (p.value === "\u2713 pass") {{
-    el.textContent = "\u2713 pass";
+  }} else if (p.value === "\u2717 NO MATCH") {{
+    el.textContent = "\u2717 NO MATCH";
+    el.style.cssText = "color:#fca5a5;font-weight:700;font-size:12px";
+  }} else if (p.value === "\u2713 PASS") {{
+    el.textContent = "\u2713 PASS";
     el.style.cssText = "color:#34d399;font-size:12px";
   }} else {{
     el.textContent = "\u2014";

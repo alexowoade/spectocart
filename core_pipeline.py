@@ -401,6 +401,15 @@ _HEAD_NOUN_EXCEPTIONS = {
     "count", "ct", "ml", "kg", "cm", "mm", "pack", "pk",
 }
 
+# Generic action words that never prove an item matches.
+# "repair" alone let a pine-wood repair stick pass as laminate epoxy
+# putty (it shared only "repair" + "stick"). These words appear in
+# almost every repair product title, so they carry no meaning.
+# Excluding them forces at least 2 distinctive-word matches.
+_GENERIC_MATCH_WORDS = {
+    "repair", "fix", "patch",
+}
+
 # Words we deliberately do not strip the trailing "s" from.
 _NO_STEM = {
     "glass", "class", "boss", "dress", "press", "cross", "grass", "moss",
@@ -447,7 +456,8 @@ def _tokenize(text: str) -> set[str]:
     text = re.sub(r"['\u2019]s\b", "", text.lower())
     words = re.findall(r"[a-z0-9]+", text)
     return {_stem(w) for w in words
-            if w not in _STOPWORDS and _stem(w) not in _HEAD_NOUN_EXCEPTIONS}
+            if w not in _STOPWORDS and _stem(w) not in _HEAD_NOUN_EXCEPTIONS
+            and _stem(w) not in _GENERIC_MATCH_WORDS}
 
 
 def _meaningful_tokens(text: str) -> list[str]:
@@ -998,6 +1008,7 @@ def build_receipt(
     critic_verdicts: list[dict] | None = None,
     paypal_order: dict | None = None,
     demo_mode: bool = False,
+    out_of_stock: list[dict] | None = None,
 ) -> Receipt:
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -1012,6 +1023,7 @@ def build_receipt(
         "fallback_policy": fallback_policy,
         "fallback_applied": fallback_applied,
         "fallback_drops": fallback_drops,
+        "out_of_stock": out_of_stock or [],
         "sourced_cart": [
             {k: v for k, v in row.items() if k not in ("evaluated", "raw_products")}
             for row in sourced_cart
@@ -1247,14 +1259,34 @@ def _run_pipeline(args) -> int:
     print("\n[2/3] Querying Channel3 Product Graph for live inventory...")
     sourced_cart: list[dict] = []
     evaluated_by_item: list[dict] = []
+    out_of_stock: list[dict] = []
     for item in bom.items:
         try:
             c3 = search_channel3_product(item.search_query, item.max_unit_price, relevance_text=item.item_name)
         except NoValidOfferError as exc:
-            print(f"  ✗ {item.item_name}: no valid offer. Rejections:")
+            print(f"  ✗ {item.item_name}: no valid offer, moving to Out of Stock. Rejections:")
             for e in exc.evaluated:
                 print(f"      - '{e.title}' @ ${e.unit_price} [{e.merchant}]: {e.rejected_because}")
-            raise
+            out_of_stock.append({
+                "bom_item": item.item_name,
+                "priority": item.priority,
+                "quantity": item.quantity,
+                "target_unit_budget": item.max_unit_price,
+                "search_query": item.search_query,
+                "ai_reasoning": item.ai_reasoning,
+                "evaluated": [
+                    {
+                        "title": e.title,
+                        "unit_price": e.unit_price,
+                        "merchant": e.merchant,
+                        "relevance_score": e.relevance_score,
+                        "matched_words": e.matched_words,
+                        "rejected_because": e.rejected_because,
+                    }
+                    for e in exc.evaluated
+                ],
+            })
+            continue
         line_total = round(c3["unit_price"] * item.quantity, 2)
         sourced_cart.append({
             "bom_item": item.item_name,
@@ -1423,7 +1455,8 @@ def _run_pipeline(args) -> int:
             bom_items=[b.model_dump() for b in bom.items],
             sourced_cart=sourced_cart, evaluated_by_item=evaluated_by_item,
             fallback_policy=FALLBACK_POLICY, fallback_applied=fallback_applied,
-            fallback_drops=fallback_drops, sourced_total=grand_total,
+            fallback_drops=fallback_drops,
+        out_of_stock=out_of_stock, sourced_total=grand_total,
             project_math=project_math, steps=steps, critic_verdicts=critic_verdicts,
         )
         write_receipt(receipt)
